@@ -1,0 +1,127 @@
+<?php
+
+/**
+ *  SFW - SimpleFrameWork
+ *
+ *  Copyright (C) 2013  Stefan Paproth
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as
+ *  published by the Free Software Foundation, either version 3 of the
+ *  License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program. If not, see
+ *  http://www.gnu.org/licenses/agpl.txt.
+ *
+ */
+
+?>
+<div class="page-header">
+    <h1><?php echo($this->name);?></h1>
+</div>
+<div id="item-<?php echo($this->id);?>" class="card card-block item-xstyle">
+    <img
+        style="float: left; width: 75px;"
+        class="content left img-responsive img-rounded"
+        src="<?php echo($this->image); ?>"
+        alt=""
+    />
+    <h4 class="card-title"><?php echo($this->title->htmlencode());?></h4>
+    <small class="blogheader">
+        Erstellt von: <?php echo($this->mailaddr); ?>&nbsp;&nbsp;
+        Download:
+        <a
+            class="link"
+            href="<?php echo($this->dllink);?>"
+        >
+            <?php echo($this->filename);?>
+        </a>&nbsp;&nbsp;
+        Eintrag vom: <?php echo($this->creationDate); ?>
+    </small>
+    <p class="card-text">
+        <?php echo($this->description);?>
+    </p>
+    <p>
+        Zurück zur
+        <a class="link" href="?p=<?php echo($this->page);?>">
+            Übersichtenseite
+        </a>
+    </p>
+    <?php if($this->permission->createAllowed()): ?>
+    <div
+        id="fileuploadArea_"
+    ></div>
+    <input id="curgal" type="hidden" value="<?php echo($this->galId); ?>" />
+    <input id="curpage" type="hidden" value="<?php echo($this->page); ?>" />
+    <button
+        class="btn btn-danger btn-sm btnDel"
+        type="submit"
+    >
+        speichern
+    </button>
+    <?php endif; ?>
+    <?php foreach($this->pics as $k => $v): ?>
+    <?php if($k % 5 == 0): ?>
+    <?php if($k != 0): ?>
+    </div>
+    <?php endif;?>
+    <div class="row">
+    <?php endif; ?>
+        <div class="col-md-3" style="padding: 0.9375rem; width: 20%;">
+            <a
+                href="<?php echo($v['lnk']);?>"
+                rel="lightbox-gallerie"
+            >
+                <img
+                    class="img-rounded content <?php if($this->editable && $v['del']):?> imgdeleted <?php endif;?> "
+                    alt=""
+                    src="<?php echo($v['src']); ?>"
+                    title="<?php echo($v['ttp']);?>"
+                />
+            </a>
+            <?php /*
+                <a
+                    id="clid<?php echo($entry['id']);?>"
+                    style="font-weight: bold; font-size: 0.8em;"
+                    class="fold"
+                    title="Hier klicken um Kommentare zu lesen"
+                    href="#"
+                >
+                    12 Kommentare
+                </a>
+            */ ?>
+
+            <?php if($this->permission->createAllowed()): ?>
+            <?php if($v['pre']): ?>
+            <i>Vorschaubild</i>
+            <?php else: ?>
+            <button
+                class="btn btn-danger btn-sm btnDel"
+                value="<?php echo($v['ttp']);?>"
+                type="submit"
+            >
+                löschen
+            </button>
+            <button
+                class="btn btn-success btn-sm btnDel"
+                style="margin-top: 0.6em;"
+                value="<?php echo($v['ttp']);?>"
+                type="submit"
+            >
+                Vorschaubild
+            </button>
+            <?php endif; ?>
+            <?php endif; ?>
+        </div>
+    <?php endforeach; ?>
+    </div>
+    <p>
+        Hier geht's zurück zum <a class="link" href="#">Seitenanfang</a>
+    </p>
+</div>
