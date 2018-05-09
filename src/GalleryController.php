@@ -124,74 +124,72 @@ class GalleryController extends AbstractController {
         $entries = [];
 
         foreach($rows as $row) {
-            $cd = $this->getShortDate($row['CreationDate']);
+            $cd = $this->getDate($row['CreationDate']);
             $entry = [];
-            $entry['id'          ] = $row['Id'];
-            $entry['date'        ] = $cd;
-            $entry['title'       ] = $row['Title'];
-            $entry['description' ] = $row['Description'];
-            $entry['ownEntry'    ] = (bool)$row['OwnEntry'];
-            $entry['previewImage'] = '/img/33/1/' . $row['PreviewImage'];
-            $entry['creator'     ] = (string)$this->getEMail($row["Email"], $row['Creator'], 'Galerie ' . $row['Title'] . ' (' . $cd . ")");
+            $entry['id'               ] = $row['Id'];
+            $entry['date'             ] = $cd;
+            $entry['title'            ] = $row['Title'];
+            $entry['link'             ] = '?do=showGallery&id=' . $row['Id'];
+            $entry['description'      ] = $row['Description'];
+            $entry['ownEntry'         ] = (bool)$row['OwnEntry'];
+            $entry['downloadLinkTitle'] = 'landesmeisterschaft_2018_in_fallingbostel.zip';
+            $entry['downloadLink'     ] = '?getFile';
+            $entry['previewImage'     ] = '/' . $this->getGalleryPath($row['Id']) . $row['PreviewImage'];
+            $entry['creator'          ] = (string)$this->getEMail($row["Email"], $row['Creator'], 'Galerie ' . $row['Title'] . ' (' . $cd . ")");
             $entries[] = $entry;
         }
         $content->assign('entries', $entries);
         return $content;
     }
 
-
-
-
-
-    protected function getGallery($id, $page = 0) {
+    public function showGallery($id = 1, $page = 0) {
         $stmt =
-            "SELECT `sfw2_imagegalleries`.`Name`, `sfw2_imagegalleries`.`CreationDate`, " .
+            "SELECT `sfw2_imagegalleries`.`Title`, `sfw2_imagegalleries`.`CreationDate`, " .
             "`sfw2_imagegalleries`.`Description`, `sfw2_imagegalleries`.`PreviewImage`, " .
-            "`sfw2_users`.`Email`,  " .
-            "CONCAT(`sfw2_users`.`FirstName`, ' ', `sfw2_users`.`LastName`) AS `Creator` " .
+            "`sfw2_user`.`Email`,  " .
+            "CONCAT(`sfw2_user`.`FirstName`, ' ', `sfw2_user`.`LastName`) AS `Creator` " .
             "FROM `sfw2_imagegalleries` " .
-            "LEFT JOIN `sfw2_users` " .
-            "ON `sfw2_users`.`Id` = `sfw2_imagegalleries`.`UserId` " .
-            "WHERE `sfw2_imagegalleries`.`Id` = '%s' " .
-            "AND `sfw_division`.`Module` = '%s' ";
+            "LEFT JOIN `sfw2_user` " .
+            "ON `sfw2_user`.`Id` = `sfw2_imagegalleries`.`UserId` " .
+            "WHERE `sfw2_imagegalleries`.`Id` = '%s' ";
 
-        $rv = $this->database->selectRow($stmt, [$id]);
+        $row = $this->database->selectRow($stmt, [$id]);
 
-        if(empty($rv)) {
+        if(empty($row)) {
             throw new \SFW\Gallery\Exception(
                 'no gallery fetched!',
                 \SFW\Gallery\Exception::NO_GALLERY_FETCHED
             );
         }
-        if(!is_dir($rv['Path'] . '/thumb/')) {
+
+        $path = $this->getGalleryPath($id);
+
+        if(!is_dir($path . '/thumb/')) {
             throw new \SFW\Gallery\Exception(
-                'path <' . $rv['Path'] . '> is invalid',
+                'path <' . $path . '> is invalid',
                 \SFW\Gallery\Exception::INVALID_PATH
             );
         }
 
-        $dir = dir($rv['Path'] . '/thumb/');
-        $pics = array();
+        $dir = dir($path . '/thumb/');
+        $pics = [];
 
         while(false !== ($entry = $dir->read())) {
             if($entry == '.' || $entry == '..') {
                 continue;
             }
 
-            $fi = pathinfo($rv['Path'] . '/thumb/' . $entry);
+            $fi = pathinfo($path . '/thumb/' . $entry);
 
-            if(
-                strtolower($fi['extension']) != 'jpg' &&
-                strtolower($fi['extension']) != 'png'
-            ) {
+            if(strtolower($fi['extension']) != 'jpg' && strtolower($fi['extension']) != 'png') {
                 continue;
             }
 
-            $pic = array();
-            $pic['lnk'] = '/' . $rv['Path'] . '/high/' . $entry;
+            $pic = [];
+            $pic['lnk'] = '/' . $path . '/high/' . $entry;
             $pic['ttp'] = $entry;
-            $pic['src'] = '/' . $rv['Path'] . '/thumb/' . $entry;
-            $pic['pre'] = ($rv['PreviewImage'] == $entry);
+            $pic['src'] = '/' . $path . '/thumb/' . $entry;
+            $pic['pre'] = ($row['PreviewImage'] == $entry);
             $pics[] = $pic;
         }
 
@@ -199,34 +197,33 @@ class GalleryController extends AbstractController {
 
         rsort($pics);
 
-        $crDate = new \SFW\View\Helper\Date($rv['CreationDate'], new \SFW\Locale());
-        $view   = new \SFW\View();
-        $view->assign('name',              $rv['Name']);
-        $view->assign('filename',          $rv['FileName']);
-        $view->assign('page',              (int)$page);
-        $view->assign('description',       $rv['Description']);
-        $view->assign('creationDate',      $crDate);
-        $view->assign('pics',              $pics);
-        $view->assign('dllink',            '?getfile=' . $rv['Token']);
-        $view->assign('editable',          $this->ctrl->hasDeletePermission());
-        $view->assign('galId',             (int)$id);
-        $view->assign('maxFileUploads',    ini_get('max_file_uploads'));
-        $view->assign('mailaddr',          new \SFW\View\Helper\Obfuscator\EMail(
-            $rv['Email'],
-            $rv['Creator'],
-            'Galerie ' . $rv['Name'] . ' (' .
-            $crDate->getFormatedDate(true) . ')'
-        ));
-        $view->assign('image', '/public/content/users/' . \SFW\Helper::getImageFileName(
+        $cd = $this->getDate($row['CreationDate']);
+        $content = new Content('SFW2\\Gallery\\Gallery');
+        $content->assign('caption',           $row['Title']);
+        $content->assign('id',                (int)$id);
+        $content->assign('mailaddr', (string)$this->getEMail($row["Email"], $row['Creator'], 'Galerie ' . $row['Title'] . ' (' . $cd . ")"));
+        $content->assign('creationDate',      $cd);
+        $content->assign('description',       $row['Description']);
+        $content->assign('dllink',            '?getfile=');
+
+
+
+        $content->assign('filename',          '$row[\'FileName\']');
+        $content->assign('page',              (int)$page);
+
+
+        $content->assign('pics',              $pics);
+
+        $content->assign('editable',          true);
+
+        $content->assign('maxFileUploads',    ini_get('max_file_uploads'));
+        $content->assign('image', '/public/content/users/');/* . $this->getImageFileNameByUser()
  # FIXME: _No hardcoded path
                     'public/content/users/',
                     $row['FirstName'],
                     $row['LastName']
-            ));
-        $view->assignTpl(
-            $this->conf->getTemplateFile('Gallery/Gallery')
-        );
-        return $view->getContent();
+            ));*/
+        return $content;
     }
 
 
@@ -241,7 +238,9 @@ class GalleryController extends AbstractController {
 
 
 
-
+    protected function getGalleryPath($id) {
+        return 'img' . DIRECTORY_SEPARATOR . $this->pathId . DIRECTORY_SEPARATOR . $id . DIRECTORY_SEPARATOR;
+    }
 
 
 
@@ -370,10 +369,6 @@ class GalleryController extends AbstractController {
         return
             $this->dto->getErrorProvider()->getContent() .
             $this->getSummary($page);
-    }
-
-    public function showgallery() {
-        return $this->getGallery(45); #$this->dto->getNumeric('g'), $page);
     }
 
     public function deleteImg() {

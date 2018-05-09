@@ -16,7 +16,8 @@
     enthalten die Bilder in der besten Auflösung...
 </p>
 <?php if($this->permission->createAllowed()): ?>
-<form>
+<button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#createModal">Neuer Eintrag</button>
+<form class="needs-validation noshow" novalidate >
     <div class="row">
         <label for="caption" class="col-sm-2 col-form-label">Name</label>
         <div class="col-sm-4">
@@ -47,43 +48,36 @@
             ></textarea>
         </div>
     </div>
-    <div class="modal-footer" style="border: 0; margin-top: 12px;">
-        <button type="button" class="btn btn-success btn-sm submit-form">
-            speichern
-        </button>
-        <button type="reset" class="btn btn-danger btn-sm">
-            abbrechen
-        </button>
-    </div>
 </form>
+<div style="height: 30px;"> </div>
 <?php endif; ?>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.0.11/handlebars.min.js"></script>
 <script id="entry-template" type="text/x-handlebars-template">
 
 
     <div id="{{id}}" style="display: inline-block; margin-bottom: 35px; background-color: #fff; background-clip: border-box; border: 1px solid rgba(0,0,0,.125); border-radius: .25rem; width: 600px;">
-        <a href="">
-        <img class="rounded-left float-left" src="{{previewImage}}" alt="{{position}}" />
+        <a href="{{link}}" title="{{description}}">
+            <img class="rounded-left float-left" src="{{previewImage}}" alt="{{position}}" />
         </a>
         <div style="margin-left: 12rem; margin-top: 0.5rem;">
-            <h5>{{position}}</h5>
-            <p style="margin-bottom: 0;">{{title}}</p>
-            <p style="margin-bottom: 0;">{{date}}</p>
-            <p style="margin-bottom: 0;">{{{creator}}}</p>
-            <p style="margin-bottom: 0;">{{{link}}}</p>
+            <h4 style="margin-bottom: 15px;">{{title}}</h4>
+            {{#if deleteAllowed}}
+            <div>
+                <button
+                    type="button"
+                    class="btn btn-danger btn-sm"
+                    data-toggle="modal"
+                    data-target="#acceptDialogModalCenter"
+                    data-item-id="{{id}}"
+                >
+                    löschen
+                </button>
+            </div>
+            {{else}}
+            <p style="margin-bottom: 0;">{{date}}; {{{creator}}}</p>
+            <p style="margin-bottom: 0;"><a href="{{{downloadLink}}}">{{{downloadLinkTitle}}}</a></p>
+            {{/if}}
         </div>
-        {{#if deleteAllowed}}
-        <button
-            type="button"
-            class="btn btn-danger btn-sm"
-            data-toggle="modal"
-            data-target="#acceptDialogModalCenter"
-            data-item-id="{{id}}"
-        >
-            löschen
-        </button>
-        <div>{{description}}</div>
-        {{/if}}
     </div>
 
 </script>

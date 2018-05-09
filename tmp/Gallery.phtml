@@ -22,17 +22,17 @@
  */
 
 ?>
-<div class="page-header">
-    <h1><?php echo($this->name);?></h1>
-</div>
-<div id="item-<?php echo($this->id);?>" class="card card-block item-xstyle">
+<h1><?php echo($this->caption);?></h1>
+<?php /*
     <img
         style="float: left; width: 75px;"
         class="content left img-responsive img-rounded"
         src="<?php echo($this->image); ?>"
         alt=""
     />
-    <h4 class="card-title"><?php echo($this->title->htmlencode());?></h4>
+*/ ?>
+
+
     <small class="blogheader">
         Erstellt von: <?php echo($this->mailaddr); ?>&nbsp;&nbsp;
         Download:
@@ -44,9 +44,10 @@
         </a>&nbsp;&nbsp;
         Eintrag vom: <?php echo($this->creationDate); ?>
     </small>
-    <p class="card-text">
-        <?php echo($this->description);?>
-    </p>
+    <div class="alert alert-info" role="alert">
+        <strong>Beschreibung</strong>
+        <p><?php echo($this->description);?></p>
+    </div>
     <p>
         Zurück zur
         <a class="link" href="?p=<?php echo($this->page);?>">
@@ -57,14 +58,9 @@
     <div
         id="fileuploadArea_"
     ></div>
-    <input id="curgal" type="hidden" value="<?php echo($this->galId); ?>" />
+    <input id="curgal" type="hidden" value="<?php echo($this->id); ?>" />
     <input id="curpage" type="hidden" value="<?php echo($this->page); ?>" />
-    <button
-        class="btn btn-danger btn-sm btnDel"
-        type="submit"
-    >
-        speichern
-    </button>
+    <button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#createModal">Neuer Eintrag</button>
     <?php endif; ?>
     <?php foreach($this->pics as $k => $v): ?>
     <?php if($k % 5 == 0): ?>
@@ -79,7 +75,7 @@
                 rel="lightbox-gallerie"
             >
                 <img
-                    class="img-rounded content <?php if($this->editable && $v['del']):?> imgdeleted <?php endif;?> "
+                    class="rounded"
                     alt=""
                     src="<?php echo($v['src']); ?>"
                     title="<?php echo($v['ttp']);?>"
@@ -124,4 +120,3 @@
     <p>
         Hier geht's zurück zum <a class="link" href="#">Seitenanfang</a>
     </p>
-</div>
