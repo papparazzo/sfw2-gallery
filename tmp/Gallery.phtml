@@ -55,12 +55,9 @@
         </a>
     </p>
     <?php if($this->permission->createAllowed()): ?>
-    <div
-        id="fileuploadArea_"
-    ></div>
+    <div class="fileuploadArea"></div>
     <input id="curgal" type="hidden" value="<?php echo($this->id); ?>" />
     <input id="curpage" type="hidden" value="<?php echo($this->page); ?>" />
-    <button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#createModal">Neuer Eintrag</button>
     <?php endif; ?>
     <?php foreach($this->pics as $k => $v): ?>
     <?php if($k % 5 == 0): ?>
