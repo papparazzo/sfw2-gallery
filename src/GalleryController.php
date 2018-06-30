@@ -99,8 +99,8 @@ class GalleryController extends AbstractController {
         return $content;
     }
 
-    public function loadSummary($page = 0) {
-        $offset = $page * self::SUMMERIES_PER_PAGE;
+    public function read($all = false) {
+        $offset = 0; #$page * self::SUMMERIES_PER_PAGE;
 
         $stmt =
             "SELECT `sfw2_imagegalleries`.`Id`, `sfw2_imagegalleries`.`Title`, " .
