@@ -16,7 +16,6 @@
     enthalten die Bilder in der besten Auflösung...
 </p>
 <?php if($this->permission->createAllowed()): ?>
-<button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#createModal">Neuer Eintrag</button>
 <form class="needs-validation noshow" novalidate >
     <div class="row">
         <label for="caption" class="col-sm-2 col-form-label">Name</label>
@@ -49,6 +48,7 @@
         </div>
     </div>
 </form>
+<button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#createDialogModal">Neuer Eintrag</button>
 <div style="height: 30px;"> </div>
 <?php endif; ?>
 <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/handlebars.js/4.0.11/handlebars.min.js"></script>
@@ -67,7 +67,7 @@
                     type="button"
                     class="btn btn-danger btn-sm"
                     data-toggle="modal"
-                    data-target="#acceptDialogModalCenter"
+                    data-target="#deleteDialogModal"
                     data-item-id="{{id}}"
                 >
                     löschen
@@ -81,7 +81,7 @@
     </div>
 
 </script>
-<div class="list-unstyled reload-data" id="blaha" data-url="/fussball/bilder?do=loadSummary" >
+<div class="list-unstyled reload-data" data-url="<?php echo($this->getCurrentPath()); ?>" >
 </div>
 
 
