@@ -1,0 +1,58 @@
+<h1><?php echo($this->caption);?></h1>
+<p>
+    Um Dir die Bilder der jeweiligen Galerie anzuschauen, klicke bitte auf das
+    jeweilige Vorschaubild.
+</p>
+<div class="alert alert-success" role="alert">
+    <strong>Anmerkung</strong>
+    <p>
+    Wenn ein Bild gelöscht werden soll dann schreib bitte einen entsprechenden Hinweis an
+    <?php echo($this->webmaster); ?>
+    </p>
+</div>
+<p>
+    Du hast ebenfalls Bilder? Immer her damit. Wenn Du magst, kannst Du
+    Dir die jeweiligen Galerien auch als Zip-Datei herunterladen. Die Archive
+    enthalten die Bilder in der besten Auflösung...
+</p>
+<?php if($this->permission->createAllowed()): ?>
+<form class="needs-validation noshow" novalidate >
+    <div class="row">
+        <label for="caption" class="col-sm-2 col-form-label">Name</label>
+        <div class="col-sm-4">
+            <input
+                class="form-control form-control-sm"
+                type="text"
+                name="caption"
+                value=""
+                placeholder="Gib hier den Namen der Gallerie ein..."
+                maxlength="50"
+                title="Gib hier bitte die Überschrift der neuen Galerie ein."
+            />
+        </div>
+    </div>
+    <div class="row">
+        <label for="description" class="col-sm-2 col-form-label">
+            Beschreibung
+        </label>
+        <div class="col-sm-9">
+            <textarea
+                class="form-control form-control-sm"
+                name="description"
+                placeholder="Hier kommt die Beschreibung rein ..."
+                title="Hier kommt der Inhalt hin. Max. 65.535 Buchstaben"
+                cols="30"
+                rows="10"
+                maxlength="65535"
+            ></textarea>
+        </div>
+    </div>
+</form>
+<button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#createDialogModal">Neuer Eintrag</button>
+<div style="height: 30px;"> </div>
+<?php endif; ?>
+<ul class="list-unstyled reload-data mt-5" data-url="<?php echo($this->getCurrentPath()); ?>" >
+</ul>
+<div class="modificationDate">
+    Stand: <time pubdate="pubdate"><?php echo($this->modificationDate); ?></time>
+</div>
