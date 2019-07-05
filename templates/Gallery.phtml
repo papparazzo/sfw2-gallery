@@ -40,46 +40,48 @@
     <input id="curgal" type="hidden" value="<?php echo($this->id); ?>" />
     <input id="curpage" type="hidden" value="<?php echo($this->page); ?>" />
     <?php endif; ?>
-    <?php foreach($this->pics as $k => $v): ?>
-    <div class="cont">
-        <a href="<?php echo($v['lnk']);?>" rel="lightbox-gallerie">
-            <img class="img-thumbnail" alt="" src="<?php echo($v['src']); ?>" title="<?php echo($v['ttp']);?>" />
-        </a>
-        <?php /*
-            <a
-                id="clid<?php echo($entry['id']);?>"
-                style="font-weight: bold; font-size: 0.8em;"
-                class="fold"
-                title="Hier klicken um Kommentare zu lesen"
-                href="#"
-            >
-                12 Kommentare
+    <div class="d-flex flex-wrap">
+        <?php foreach($this->pics as $k => $v): ?>
+        <div class="p-2 ">
+            <a href="<?php echo($v['lnk']);?>" rel="lightbox-gallerie">
+                <img class="img-thumbnail" alt="" src="<?php echo($v['src']); ?>" title="<?php echo($v['ttp']);?>" />
             </a>
-        */ ?>
+            <?php /*
+                <a
+                    id="clid<?php echo($entry['id']);?>"
+                    style="font-weight: bold; font-size: 0.8em;"
+                    class="fold"
+                    title="Hier klicken um Kommentare zu lesen"
+                    href="#"
+                >
+                    12 Kommentare
+                </a>
+            */ ?>
 
-        <?php if($this->permission->createAllowed()): ?>
-        <?php if($v['pre']): ?>
-        <i>Vorschaubild</i>
-        <?php else: ?>
-        <button
-            class="btn btn-danger btn-sm btnDel"
-            value="<?php echo($v['ttp']);?>"
-            type="submit"
-        >
-            löschen
-        </button>
-        <button
-            class="btn btn-success btn-sm btnDel"
-            style="margin-top: 0.6em;"
-            value="<?php echo($v['ttp']);?>"
-            type="submit"
-        >
-            Vorschaubild
-        </button>
-        <?php endif; ?>
-        <?php endif; ?>
+            <?php if($this->permission->createAllowed()): ?>
+            <br />
+            <?php if($v['pre']): ?>
+            <i>Vorschaubild</i>
+            <?php else: ?>
+            <button
+                class="btn btn-danger btn-sm btnDel"
+                value="<?php echo($v['ttp']);?>"
+                type="submit"
+            >
+                löschen
+            </button>
+            <button
+                class="btn btn-success btn-sm btnDel"
+                value="<?php echo($v['ttp']);?>"
+                type="submit"
+            >
+                Vorschau
+            </button>
+            <?php endif; ?>
+            <?php endif; ?>
+        </div>
+        <?php endforeach; ?>
     </div>
-    <?php endforeach; ?>
     <p>
         Hier geht's zurück zum <a class="link" href="#">Seitenanfang</a>
     </p>
