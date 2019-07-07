@@ -20,26 +20,7 @@
  *
  */
 
-
-
-
-
-/**
- * class Exception extends \SFW\Exception {
-    const INVALID_PATH                      = 2;
-    const INVALID_IMAGE                     = 9;
-    const COULD_NOT_DELETE_PREVIEW_IMAGE    = 3;
-    const PREVIEW_FILE_DOES_NOT_EXIST       = 4;
-    const COULD_NOT_CREATE_GALLERY_PATH     = 5;
-    const COULD_NOT_CHANGE_PREVIEW_IMAGE    = 1;
-    const COULD_NOT_INSERT_INTO_MEDIA_TABLE = 6;
-    const INSERTATION_OF_GALLERY_FAILED     = 7;
-    const NO_GALLERY_FETCHED                = 8;
-    const UPDATING_GALLERY_FAILED           = 10;
-}
- */
-
-namespace SFW2\Gallery;
+namespace SFW2\Gallery\Controller;
 
 use SFW2\Routing\AbstractController;
 use SFW2\Routing\Result\Content;
@@ -52,7 +33,9 @@ use SFW2\Controllers\Controller\Helper\DateTimeHelperTrait;
 use SFW2\Controllers\Controller\Helper\ImageHelperTrait;
 use SFW2\Controllers\Controller\Helper\EMailHelperTrait;
 
-class GalleryController extends AbstractController {
+use SFW2\Gallery\GalleryException;
+
+class Gallery extends AbstractController {
 
     use DateTimeHelperTrait;
     use ImageHelperTrait;
@@ -86,41 +69,57 @@ class GalleryController extends AbstractController {
     }
 
     public function index($all = false) {
+        unset($all);
         $content = new Content('SFW2\\Gallery\\Summary');
 
-        $content->assign('caption',    $this->title ? $this->title : 'Gallerieübersicht');
-        $content->assign('title',      $this->title);
-        #FIXME $view->assign('modiDate',   $this->ctrl->getModificationDate());
-        $content->assign('webmaster',  (string)(new EMail(
+        $content->assign('caption',          $this->title ?? 'Gallerieübersicht');
+        $content->assign('title',            $this->title);
+        $content->assign('modificationDate', $this->getLastModificatonDate());
+        $content->assign('webmaster',        (string)(new EMail(
             $this->config->getVal('project', 'eMailWebMaster')
         )));
 
         $content->appendJSFile('crud.js');
+        $content->appendJSFile('Gallery.handlebars.js');
         return $content;
     }
 
+    protected function getLastModificatonDate() {
+        $stmt =
+            "SELECT `imagegalleries`.`CreationDate` " .
+            "FROM `{TABLE_PREFIX}_imagegalleries` AS `imagegalleries` " .
+            "WHERE `imagegalleries`.`PathId` = '%s' " .
+            "ORDER BY `imagegalleries`.`CreationDate`";
+
+        return $this->database->selectSingle($stmt, [$this->pathId]);
+    }
+
     public function read($all = false) {
-        $offset = 0; #$page * self::SUMMERIES_PER_PAGE;
+        unset($all);
+        $count = (int)filter_input(INPUT_GET, 'count', FILTER_VALIDATE_INT);
+        $start = (int)filter_input(INPUT_GET, 'offset', FILTER_VALIDATE_INT);
+
+        $count = $count ? $count : 5;
 
         $stmt =
-            "SELECT `sfw2_imagegalleries`.`Id`, `sfw2_imagegalleries`.`Title`, " .
-            "`sfw2_imagegalleries`.`Description`, `sfw2_imagegalleries`.`CreationDate`, " .
-            "`sfw2_user`.`Email`, `sfw2_imagegalleries`.`PreviewImage`, " .
-            "CONCAT(`sfw2_user`.`FirstName`, ' ', `sfw2_user`.`LastName`) AS `Creator`, " .
-            "IF(`sfw2_imagegalleries`.`UserId` = '%s', '1', '0') AS `OwnEntry` " .
-            "FROM `sfw2_imagegalleries` " .
-            "LEFT JOIN `sfw2_user` " .
-            "ON `sfw2_user`.`Id` = `sfw2_imagegalleries`.`UserId` " .
-            "WHERE `sfw2_imagegalleries`.`PathId` = '%s' ";
+            "SELECT `imagegalleries`.`Id`, `imagegalleries`.`Title`, `imagegalleries`.`Description`, `imagegalleries`.`CreationDate`, " .
+            "`user`.`Email`, `imagegalleries`.`PreviewImage`, " .
+            "CONCAT(`user`.`FirstName`, ' ', `user`.`LastName`) AS `Creator`, " .
+            "IF(`imagegalleries`.`UserId` = '%s', '1', '0') AS `OwnEntry` " .
+            "FROM `{TABLE_PREFIX}_imagegalleries` AS `imagegalleries` " .
+            "LEFT JOIN `{TABLE_PREFIX}_user` AS `user` " .
+            "ON `user`.`Id` = `imagegalleries`.`UserId` " .
+            "WHERE `imagegalleries`.`PathId` = '%s' ";
 
         #if(!$this->ctrl->hasCreatePermission()) {
-        #    $stmt .= "AND `sfw2_imagegalleries`.`PreviewImage` != '' ";
+        #    $stmt .= "AND `{TABLE_PREFIX}_imagegalleries`.`PreviewImage` != '' ";
         #}
 
-        $stmt .= "ORDER BY `sfw2_imagegalleries`.`Id` DESC ";
+        $stmt .= "ORDER BY `imagegalleries`.`Id` DESC ";
 
-        $rows = $this->database->select($stmt, [$this->user->getUserId(), $this->pathId, $offset, self::SUMMERIES_PER_PAGE]);
-        $content = new Content();
+        $rows = $this->database->select($stmt, [$this->user->getUserId(), $this->pathId, $start, $count]);
+
+        $content = new Content('Gallery');
         $entries = [];
 
         foreach($rows as $row) {
@@ -144,31 +143,23 @@ class GalleryController extends AbstractController {
 
     public function showGallery($id = 1, $page = 0) {
         $stmt =
-            "SELECT `sfw2_imagegalleries`.`Title`, `sfw2_imagegalleries`.`CreationDate`, " .
-            "`sfw2_imagegalleries`.`Description`, `sfw2_imagegalleries`.`PreviewImage`, " .
-            "`sfw2_user`.`Email`,  " .
-            "CONCAT(`sfw2_user`.`FirstName`, ' ', `sfw2_user`.`LastName`) AS `Creator` " .
-            "FROM `sfw2_imagegalleries` " .
-            "LEFT JOIN `sfw2_user` " .
-            "ON `sfw2_user`.`Id` = `sfw2_imagegalleries`.`UserId` " .
-            "WHERE `sfw2_imagegalleries`.`Id` = '%s' ";
+            "SELECT `imagegalleries`.`Title`, `imagegalleries`.`CreationDate`, `imagegalleries`.`Description`, `imagegalleries`.`PreviewImage`, " .
+            "`user`.`Email`,  CONCAT(`user`.`FirstName`, ' ', `user`.`LastName`) AS `Creator` " .
+            "FROM `{TABLE_PREFIX}_imagegalleries` AS `imagegalleries` " .
+            "LEFT JOIN `{TABLE_PREFIX}_user` AS `user` " .
+            "ON `user`.`Id` = `imagegalleries`.`UserId` " .
+            "WHERE `imagegalleries`.`Id` = '%s' ";
 
         $row = $this->database->selectRow($stmt, [$id]);
 
         if(empty($row)) {
-            throw new \SFW\Gallery\Exception(
-                'no gallery fetched!',
-                \SFW\Gallery\Exception::NO_GALLERY_FETCHED
-            );
+            throw new \SFW\Gallery\Exception('no gallery fetched!', \SFW\Gallery\Exception::NO_GALLERY_FETCHED);
         }
 
         $path = $this->getGalleryPath($id);
 
         if(!is_dir($path . '/thumb/')) {
-            throw new \SFW\Gallery\Exception(
-                'path <' . $path . '> is invalid',
-                \SFW\Gallery\Exception::INVALID_PATH
-            );
+            throw new \SFW\Gallery\Exception('path <' . $path . '> is invalid', \SFW\Gallery\Exception::INVALID_PATH);
         }
 
         $dir = dir($path . '/thumb/');
@@ -206,11 +197,8 @@ class GalleryController extends AbstractController {
         $content->assign('description',       $row['Description']);
         $content->assign('dllink',            '?getfile=');
 
-
-
         $content->assign('filename',          '$row[\'FileName\']');
         $content->assign('page',              (int)$page);
-
 
         $content->assign('pics',              $pics);
 
@@ -409,9 +397,7 @@ class GalleryController extends AbstractController {
         }
 
         if(!is_dir($rv["Path"] . '/thumb/')) {
-            throw new SFW_Exception(
-                __METHOD__ . ': path <' . $rv["Path"] . '> is invalid'
-            );
+            throw new SFW_Exception(': path <' . $rv["Path"] . '> is invalid');
         }
 
         $stmt =
@@ -444,42 +430,26 @@ class GalleryController extends AbstractController {
                 break;
 
             default:
-                return array(
+                return [
                     'error' => true,
                     'msg'   => 'Es wurde eine ungültige Datei übermittelt.' .
                     $chunk[0] . print_r($_REQUEST, true) . print_r($_FILES, true)
-                );
+                ];
         }
 
         $cnt = count(glob($rv["Path"] . '/high/*'));
         if($cnt >= 999) {
-            throw new SFW_Exception(
-                'more then <' . $cnt . '> images are not allowed'
-            );
+            throw new GalleryException('more then <' . $cnt . '> images are not allowed');
         }
 
         $filename = str_repeat('0', 4 - mb_strlen('' . $cnt)) . ++$cnt . '.' . $type;
 
-        if(!file_put_contents(
-            $rv["Path"] . '/high/' . $filename,
-            base64_decode($data[1]))
-        ) {
-            throw new SFW_Exception(
-                'could not store file <' . $filename .
-                '> in path <' . $rv["Path"] . '/high/>'
-            );
+        if(!file_put_contents($rv["Path"] . '/high/' . $filename, base64_decode($data[1]))) {
+            throw new GalleryException("could not store file <$filename> in path <" . $rv["Path"] . '/high/>');
         }
 
-        $this->generateThumb(
-            $filename,
-            170,
-            $rv["Path"] . '/high/', $rv["Path"] . '/thumb/'
-        );
-        $this->generateThumb(
-            $filename,
-            335,
-            $rv["Path"] . '/high/', $rv["Path"] . '/regular/'
-        );
+        $this->generateThumb($filename, 170, $rv["Path"] . '/high/', $rv["Path"] . '/thumb/');
+        $this->generateThumb($filename, 335, $rv["Path"] . '/high/', $rv["Path"] . '/regular/');
 
         if($rv['PreviewImage'] == '') {
             $this->changePrevImg($galid, $filename);
@@ -520,17 +490,11 @@ class GalleryController extends AbstractController {
         $rv = $this->db->selectRow($stmt, array($galid, $this->category));
 
         if(empty($rv)) {
-            throw new \SFW\Gallery\Exception(
-                'no valid gallery fetched!',
-                \SFW\Gallery\Exception::NO_GALLERY_FETCHED
-            );
+            throw new GalleryException('no valid gallery fetched!', GalleryException::NO_GALLERY_FETCHED);
         }
 
         if($fileName == $rv['PreviewImage']) {
-            throw new \SFW\Gallery\Exception(
-                'unable to delete preview-img!',
-                \SFW\Gallery\Exception::COULD_NOT_DELETE_PREVIEW_IMAGE
-            );
+            throw new GalleryException('unable to delete preview-img!', GalleryException::COULD_NOT_DELETE_PREVIEW_IMAGE);
         }
 
         unlink($rv['Path'] . '/thumb/' . $fileName);
@@ -549,10 +513,7 @@ class GalleryController extends AbstractController {
         if(is_file($path . '/thumb/' . $file)) {
             return '/' . $path . '/thumb/' . $file;
         }
-        throw new \SFW\Gallery\Exception(
-            'preview <' . $path . '/thumb/' . $file . '> does not exist',
-            \SFW\Gallery\Exception::PREVIEW_FILE_DOES_NOT_EXIST
-        );
+        throw new GalleryException("preview <$path/thumb/$file> does not exist", GalleryException::PREVIEW_FILE_DOES_NOT_EXIST);
     }
 
     private function generateThumb($file, $size, $src, $des) {
@@ -574,18 +535,7 @@ class GalleryController extends AbstractController {
             case IMAGETYPE_JPEG:
                 $old = imagecreatefromjpeg($src . '/' . $file);
                 $new = imagecreatetruecolor($desWidth, $desHeight);
-                imagecopyresampled(
-                    $new,
-                    $old,
-                    0,
-                    0,
-                    0,
-                    0,
-                    $desWidth,
-                    $desHeight,
-                    $srcWidth,
-                    $srcHeight
-                );
+                imagecopyresampled($new, $old, 0, 0, 0, 0, $desWidth, $desHeight, $srcWidth, $srcHeight);
                 imagejpeg($new, $des . '/' . $file, 100);
                 imagedestroy($old);
                 imagedestroy($new);
@@ -594,18 +544,7 @@ class GalleryController extends AbstractController {
             case IMAGETYPE_PNG:
                 $old = imagecreatefrompng($src . '/' . $file);
                 $new = imagecreatetruecolor($desWidth, $desHeight);
-                imagecopyresampled(
-                    $new,
-                    $old,
-                    0,
-                    0,
-                    0,
-                    0,
-                    $desWidth,
-                    $desHeight,
-                    $srcWidth,
-                    $srcHeight
-                );
+                imagecopyresampled($new, $old, 0, 0, 0, 0, $desWidth, $desHeight, $srcWidth, $srcHeight);
                 imagepng($new, $des . '/' . $file);
                 imagedestroy($old);
                 imagedestroy($new);
@@ -631,27 +570,18 @@ class GalleryController extends AbstractController {
         $rv = $this->db->selectRow($stmt, array($id, $this->category));
 
         if(empty($rv)) {
-            throw new \SFW\Gallery\Exception(
-                'no valid gallery fetched!',
-                \SFW\Gallery\Exception::NO_GALLERY_FETCHED
-            );
+            throw new GalleryException('no valid gallery fetched!', GalleryException::NO_GALLERY_FETCHED);
         }
 
         if($fileName == $rv['PreviewImage']) {
-            throw new \SFW\Gallery\Exception(
-                'unable to change preview-img!',
-                \SFW\Gallery\Exception::COULD_NOT_CHANGE_PREVIEW_IMAGE
-            );
+            throw new GalleryException('unable to change preview-img!', GalleryException::COULD_NOT_CHANGE_PREVIEW_IMAGE);
         }
 
         // Prüfen, ob Bild im Ordner vorhanden...
         $file = $rv["Path"] . '/thumb/' . $fileName;
 
         if(!is_file($file)) {
-            throw new \SFW\Gallery\Exception(
-                'file <' . $file . '> is not a valid image!',
-                \SFW\Gallery\Exception::INVALID_IMAGE
-            );
+            throw new GalleryException("file <$file> is not a valid image!", GalleryException::INVALID_IMAGE);
         }
 
         $stmt =
@@ -660,12 +590,10 @@ class GalleryController extends AbstractController {
             "WHERE `Id` = %s";
 
         if($this->db->update($stmt, array($fileName, $id)) != 1) {
-            throw new \SFW\Gallery\Exception(
-                'updating imagegalleries failed!',
-                \SFW\Gallery\Exception::UPDATING_GALLERY_FAILED
-            );
+            throw new GalleryException('updating imagegalleries failed!', GalleryException::UPDATING_GALLERY_FAILED);
         }
         $this->dto->setSaveSuccess();
         return true;
     }
 }
+
