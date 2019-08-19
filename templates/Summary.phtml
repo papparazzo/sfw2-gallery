@@ -6,8 +6,7 @@
 <div class="alert alert-success" role="alert">
     <strong>Anmerkung</strong>
     <p>
-    Wenn ein Bild gelöscht werden soll dann schreib bitte einen entsprechenden Hinweis an
-    <?php echo($this->webmaster); ?>
+    Wenn ein Bild gelöscht werden soll dann schreib bitte einen entsprechenden Hinweis an <?php echo($this->webmaster);?>.
     </p>
 </div>
 <p>
@@ -16,7 +15,7 @@
     enthalten die Bilder in der besten Auflösung...
 </p>
 <?php if($this->permission->createAllowed()): ?>
-<form class="needs-validation noshow" novalidate >
+<form id="<?php echo($this->getPathSimplified()); ?>" class="needs-validation noshow" novalidate >
     <div class="row">
         <label for="caption" class="col-sm-2 col-form-label">Name</label>
         <div class="col-sm-4">
@@ -48,7 +47,14 @@
         </div>
     </div>
 </form>
-<button type="button" class="btn btn-success btn-sm" data-toggle="modal" data-target="#createDialogModal">Neuer Eintrag</button>
+<button
+    type="button"
+    class="btn btn-success btn-sm"
+    data-toggle="modal"
+    data-target="#createDialogModal"
+    data-url="<?php echo($this->getCurrentPath()); ?>"
+    data-form-id="<?php echo($this->getPathSimplified()); ?>"
+>Neuer Eintrag</button>
 <div class="mt-3"></div>
 <?php endif; ?>
 <ul class="list-unstyled reload-data mt-5" data-url="<?php echo($this->getCurrentPath()); ?>" >

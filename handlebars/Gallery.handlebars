@@ -3,7 +3,7 @@
         <img class="rounded mr-4 mb-5" src="{{previewImage}}" alt="{{position}}">
     </a>
     <div class="media-body mb-5">
-        <h3 class="mb-2 mt-1">{{title}}</h3>
+        <h3 id="{{formid}}_title_{{id}}" class="mb-2 mt-1">{{title}}</h3>
         <small style="font-style: italic;">
             <div>Erstellt von {{{creator}}} am {{date}}</div>
         </small>
@@ -14,10 +14,10 @@
                 class="btn btn-danger btn-sm"
                 data-toggle="modal"
                 data-target="#deleteDialogModal"
+                data-url="{{url}}"
                 data-item-id="{{id}}"
-            >
-                löschen
-            </button>
+                data-form-id="{{formid}}"
+            >löschen</button>
         </div>
         {{else}}
         {{description}}

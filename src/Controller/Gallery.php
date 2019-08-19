@@ -26,8 +26,10 @@ use SFW2\Routing\AbstractController;
 use SFW2\Routing\Result\Content;
 use SFW2\Controllers\Widget\Obfuscator\EMail;
 use SFW2\Authority\User;
+
 use SFW2\Core\Database;
 use SFW2\Core\Config;
+use SFW2\Core\DataValidator;
 
 use SFW2\Controllers\Controller\Helper\DateTimeHelperTrait;
 use SFW2\Controllers\Controller\Helper\ImageHelperTrait;
@@ -75,9 +77,7 @@ class Gallery extends AbstractController {
         $content->assign('caption',          $this->title ?? 'Gallerieübersicht');
         $content->assign('title',            $this->title);
         $content->assign('modificationDate', $this->getLastModificatonDate());
-        $content->assign('webmaster',        (string)(new EMail(
-            $this->config->getVal('project', 'eMailWebMaster')
-        )));
+        $content->assign('webmaster',        (string)(new EMail($this->config->getVal('project', 'eMailWebMaster'))));
 
         $content->appendJSFile('crud.js');
         $content->appendJSFile('Gallery.handlebars.js');
@@ -111,10 +111,6 @@ class Gallery extends AbstractController {
             "ON `user`.`Id` = `imagegalleries`.`UserId` " .
             "WHERE `imagegalleries`.`PathId` = '%s' ";
 
-        #if(!$this->ctrl->hasCreatePermission()) {
-        #    $stmt .= "AND `{TABLE_PREFIX}_imagegalleries`.`PreviewImage` != '' ";
-        #}
-
         $stmt .= "ORDER BY `imagegalleries`.`Id` DESC ";
 
         $rows = $this->database->select($stmt, [$this->user->getUserId(), $this->pathId, $start, $count]);
@@ -133,7 +129,7 @@ class Gallery extends AbstractController {
             $entry['ownEntry'         ] = (bool)$row['OwnEntry'];
             $entry['downloadLinkTitle'] = 'landesmeisterschaft_2018_in_fallingbostel.zip';
             $entry['downloadLink'     ] = '?getFile';
-            $entry['previewImage'     ] = '/' . $this->getGalleryPath($row['Id']) . $row['PreviewImage'];
+            $entry['previewImage'     ] = $this->getPreviewImage($row['Id'], $row['PreviewImage']);
             $entry['creator'          ] = (string)$this->getEMail($row["Email"], $row['Creator'], 'Galerie ' . $row['Title'] . ' (' . $cd . ")");
             $entries[] = $entry;
         }
@@ -141,7 +137,12 @@ class Gallery extends AbstractController {
         return $content;
     }
 
-    public function showGallery($id = 1, $page = 0) {
+    public function showGallery($page = 0) {
+        $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
+        if($id == false) {
+            throw new GalleryException('no gallery fetched!', GalleryException::NO_GALLERY_FETCHED);
+        }
+
         $stmt =
             "SELECT `imagegalleries`.`Title`, `imagegalleries`.`CreationDate`, `imagegalleries`.`Description`, `imagegalleries`.`PreviewImage`, " .
             "`user`.`Email`,  CONCAT(`user`.`FirstName`, ' ', `user`.`LastName`) AS `Creator` " .
@@ -153,13 +154,13 @@ class Gallery extends AbstractController {
         $row = $this->database->selectRow($stmt, [$id]);
 
         if(empty($row)) {
-            throw new \SFW\Gallery\Exception('no gallery fetched!', \SFW\Gallery\Exception::NO_GALLERY_FETCHED);
+            throw new GalleryException("no gallery found for id <$id>!", GalleryException::NO_GALLERY_FETCHED);
         }
 
         $path = $this->getGalleryPath($id);
 
         if(!is_dir($path . '/thumb/')) {
-            throw new \SFW\Gallery\Exception('path <' . $path . '> is invalid', \SFW\Gallery\Exception::INVALID_PATH);
+            throw new GalleryException("path <$path> is invalid", GalleryException::INVALID_PATH);
         }
 
         $dir = dir($path . '/thumb/');
@@ -195,26 +196,85 @@ class Gallery extends AbstractController {
         $content->assign('mailaddr', (string)$this->getEMail($row["Email"], $row['Creator'], 'Galerie ' . $row['Title'] . ' (' . $cd . ")"));
         $content->assign('creationDate',      $cd);
         $content->assign('description',       $row['Description']);
-        $content->assign('dllink',            '?getfile=');
-
-        $content->assign('filename',          '$row[\'FileName\']');
+        #$content->assign('dllink',            '?getfile=');
+        #$content->assign('filename',          '$row[\'FileName\']');
         $content->assign('page',              (int)$page);
-
         $content->assign('pics',              $pics);
-
         $content->assign('editable',          true);
-
         $content->assign('maxFileUploads',    ini_get('max_file_uploads'));
-        $content->assign('image', '/public/content/users/');/* . $this->getImageFileNameByUser()
- # FIXME: _No hardcoded path
-                    'public/content/users/',
-                    $row['FirstName'],
-                    $row['LastName']
-            ));*/
+
+        $content->appendCSSFile('lightbox.min.css');
+        $content->appendJSFile('lightbox.min.js');
         return $content;
     }
 
+    public function create() {
+        $content = new Content('Blog');
 
+        $rulset = [
+            'caption' => ['isNotEmpty'],
+            'description' => ['isNotEmpty']
+        ];
+
+        $values = [];
+
+        $validator = new DataValidator($rulset);
+        $error = $validator->validate($_POST, $values);
+        $content->assignArray($values);
+
+        if(!$error) {
+            $content->setError(true);
+            return $content;
+        }
+
+        $stmt =
+            "INSERT INTO `{TABLE_PREFIX}_imagegalleries` " .
+            "SET " .
+            "`PreviewImage` = '', " .
+            "`PathId` = '%s', " .
+            "`UserId` = '%s', " .
+            "`CreationDate` = NOW(), " .
+            "`Title` = '%s', " .
+            "`Description` = '%s' ";
+
+        $id = $this->database->insert(
+            $stmt,
+            [
+                $this->pathId,
+                $this->user->getUserId(),
+                $values['caption']['value'],
+                $values['description']['value'],
+            ]
+        );
+
+        $folder = $this->getGalleryPath($id);
+
+        if(!mkdir($folder . '/thumb', 0777, true) || !mkdir($folder . '/high')) {
+            throw new GalleryException("could not create gallery-path <$folder>", GalleryException::COULD_NOT_CREATE_GALLERY_PATH);
+        }
+
+        $cd = $this->getShortDate();
+        $content = new Content('Gallery');
+        $content->assign('id',           ['value' => $id]);
+        $content->assign('date',         ['value' => $cd]);
+        $content->assign('title',        ['value' => $values['caption']['value']]);
+        $content->assign('description',  ['value' => $values['description']['value']]);
+        $content->assign('link',         ['value' => '?do=showGallery&id=' . $id]);
+        $content->assign('ownEntry',     ['value' => true]);
+        $content->assign('previewImage', ['value' => $this->getPreviewImage()]);
+        $content->assign('creator',  ['value' => $this->getEMailByUser($this->user, 'Galerie ' . $values['caption']['value'] . ' (' . $cd . ")")]);
+
+        $content->dataWereModified();
+        return $content;
+
+        #$url = '/' . strtolower($this->category) . '/bilder?do=showgallery&g=' . $id . '&p=0';
+
+
+        #$view = new SFW_View();
+        #$view->assign('url', $url);
+        #$view->assignTpl('JumpTo');
+        #return $view->getContent();
+    }
 
 
 
@@ -230,91 +290,21 @@ class Gallery extends AbstractController {
         return 'img' . DIRECTORY_SEPARATOR . $this->pathId . DIRECTORY_SEPARATOR . $id . DIRECTORY_SEPARATOR;
     }
 
-
-
-
-
-
-
-
-
-    public function create() {
-        $tmp = [];
-        $tmp['caption'] = $this->dto->getTitle('caption', true);
-        $tmp['description'] = $this->dto->getTitle('description', true);
-
-        if(
-            $this->dto->getErrorProvider()->hasErrors() ||
-            $this->dto->getErrorProvider()->hasWarning()
-        ) {
-            return
-                $this->dto->getErrorProvider()->getContent() .
-                $this->getSummary(0, $tmp);
+    protected function getPreviewImage($id = 0, $image = '') {
+        if ($image == '') {
+            return "/img/layout/empty.png";
         }
-
-        $folder = \SFW\Helper::createFolder(SFW_GALLERY_PATH, $tmp['caption']);
-
-        if(
-            !mkdir(SFW_GALLERY_PATH . $folder . '/thumb'  ) ||
-            !mkdir(SFW_GALLERY_PATH . $folder . '/regular') ||
-            !mkdir(SFW_GALLERY_PATH . $folder . '/high'   )
-        ) {
-            throw new \SFW\Gallery\Exception(
-                'could not create gallery-path <' .
-                SFW_GALLERY_PATH . $folder . '>',
-                \SFW\Gallery\Exception::COULD_NOT_CREATE_GALLERY_PATH
-            );
-        }
-
-        $sections = $this->database->selectKeyValue('Module', 'DivisionId', 'sfw_division');
-
-        $stmt =
-            "INSERT INTO `sfw_media` " .
-            "SET " .
-            "`UserId` = '%s', " .
-            "`Token` = '%s', " .
-            "`Name` = '%s', " .
-            "`Description` = '%s', " .
-            "`DivisionId` = '%s', " .
-            "`CreationDate` = NOW(), " .
-            "`ActionHandler` = 'zipFolder', " .
-            "`Path` = '%s', " .
-            "`FileType` = 'zip', " .
-            "`Deleted` = '1'," .
-            "`Autogen` = '1';";
-
-        $data = array(
-            $this->user->getUserId(),
-            md5($tmp['caption'] . $this->user->getUserId() . time()),
-            SFW_AuxFunc::getSimplifiedName($tmp['caption']) . '.zip',
-            'Alle Bilder der Galerie "' . $tmp['caption'] . '" als ZIP-Datei',
-            $sections[strtolower($this->category)], // FIXME: fixen!!!
-            SFW_GALLERY_PATH . $folder
-        );
-
-        $id = $this->database->insert($stmt, $data);
-
-        $stmt =
-            "INSERT INTO `sfw_imagegalleries` " .
-            "SET " .
-            "`PathId` = '%s', " .
-            "`MediaId` = '%s', " .
-            "`Description` = '%s', " .
-            "`Deleted` = '0'," .
-            "`Name` = '%s'";
-
-        $data = [$this->pathId, $id, $tmp['description'], $tmp['caption']];
-
-        $id = $this->database->insert($stmt, $data);
-        $url = '/' . strtolower($this->category) . '/bilder?do=showgallery&g=' . $id . '&p=0';
-
-        $this->ctrl->updateModificationDate();
-
-        $view = new SFW_View();
-        $view->assign('url', $url);
-        $view->assignTpl('JumpTo');
-        return $view->getContent();
+        return '/' . $this->getGalleryPath($id) . 'thumb/' . $image;
     }
+
+
+
+
+
+
+
+
+
 
     public function delete($all = false) {
         $stmt =
