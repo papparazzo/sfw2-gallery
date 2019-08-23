@@ -29,7 +29,10 @@ use SFW2\Authority\User;
 
 use SFW2\Core\Database;
 use SFW2\Core\Config;
-use SFW2\Core\DataValidator;
+
+use SFW2\Validator\Ruleset;
+use SFW2\Validator\Validator;
+use SFW2\Validator\Validators\IsNotEmpty;
 
 use SFW2\Controllers\Controller\Helper\DateTimeHelperTrait;
 use SFW2\Controllers\Controller\Helper\ImageHelperTrait;
@@ -109,9 +112,8 @@ class Gallery extends AbstractController {
             "FROM `{TABLE_PREFIX}_imagegalleries` AS `imagegalleries` " .
             "LEFT JOIN `{TABLE_PREFIX}_user` AS `user` " .
             "ON `user`.`Id` = `imagegalleries`.`UserId` " .
-            "WHERE `imagegalleries`.`PathId` = '%s' ";
-
-        $stmt .= "ORDER BY `imagegalleries`.`Id` DESC ";
+            "WHERE `imagegalleries`.`PathId` = '%s' " .
+            "ORDER BY `imagegalleries`.`Id` DESC ";
 
         $rows = $this->database->select($stmt, [$this->user->getUserId(), $this->pathId, $start, $count]);
 
@@ -127,8 +129,8 @@ class Gallery extends AbstractController {
             $entry['link'             ] = '?do=showGallery&id=' . $row['Id'];
             $entry['description'      ] = $row['Description'];
             $entry['ownEntry'         ] = (bool)$row['OwnEntry'];
-            $entry['downloadLinkTitle'] = 'landesmeisterschaft_2018_in_fallingbostel.zip';
-            $entry['downloadLink'     ] = '?getFile';
+            #$entry['downloadLinkTitle'] = 'landesmeisterschaft_2018_in_fallingbostel.zip';
+            #$entry['downloadLink'     ] = '?getFile';
             $entry['previewImage'     ] = $this->getPreviewImage($row['Id'], $row['PreviewImage']);
             $entry['creator'          ] = (string)$this->getEMail($row["Email"], $row['Creator'], 'Galerie ' . $row['Title'] . ' (' . $cd . ")");
             $entries[] = $entry;
@@ -137,7 +139,7 @@ class Gallery extends AbstractController {
         return $content;
     }
 
-    public function showGallery($page = 0) {
+    public function showGallery($page) {
         $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
         if($id == false) {
             throw new GalleryException('no gallery fetched!', GalleryException::NO_GALLERY_FETCHED);
@@ -158,7 +160,6 @@ class Gallery extends AbstractController {
         }
 
         $path = $this->getGalleryPath($id);
-
         if(!is_dir($path . '/thumb/')) {
             throw new GalleryException("path <$path> is invalid", GalleryException::INVALID_PATH);
         }
@@ -172,7 +173,6 @@ class Gallery extends AbstractController {
             }
 
             $fi = pathinfo($path . '/thumb/' . $entry);
-
             if(strtolower($fi['extension']) != 'jpg' && strtolower($fi['extension']) != 'png') {
                 continue;
             }
@@ -286,6 +286,9 @@ class Gallery extends AbstractController {
 
 
 
+
+
+
     protected function getGalleryPath($id) {
         return 'img' . DIRECTORY_SEPARATOR . $this->pathId . DIRECTORY_SEPARATOR . $id . DIRECTORY_SEPARATOR;
     }
@@ -307,9 +310,19 @@ class Gallery extends AbstractController {
 
 
     public function delete($all = false) {
+        unset($all);
+
+        $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
+        if($id == false) {
+            throw new GalleryException('no gallery fetched!', GalleryException::NO_GALLERY_FETCHED);
+        }
+
+
+
+
         $stmt =
             "SELECT `sfw_media`.`Path`, `sfw_media`.`Id` " .
-            "FROM `sfw_imagegalleries` " .
+            "FROM `{TABLE_PREFIX}_imagegalleries` AS `sfw_imagegalleries` " .
             "LEFT JOIN `sfw_media`" .
             "ON `sfw_imagegalleries`.`MediaId` = `sfw_media`.`Id` " .
             "WHERE `sfw_imagegalleries`.`Id` = %s";
