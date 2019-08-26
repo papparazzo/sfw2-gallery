@@ -82,7 +82,7 @@ class Gallery extends AbstractController {
         $content->assign('modificationDate', $this->getLastModificatonDate());
         $content->assign('webmaster',        (string)(new EMail($this->config->getVal('project', 'eMailWebMaster'))));
 
-        $content->appendJSFile('crud.js');
+        #$content->appendJSFile('crud.js');
         $content->appendJSFile('Gallery.handlebars.js');
         return $content;
     }
@@ -129,8 +129,6 @@ class Gallery extends AbstractController {
             $entry['link'             ] = '?do=showGallery&id=' . $row['Id'];
             $entry['description'      ] = $row['Description'];
             $entry['ownEntry'         ] = (bool)$row['OwnEntry'];
-            #$entry['downloadLinkTitle'] = 'landesmeisterschaft_2018_in_fallingbostel.zip';
-            #$entry['downloadLink'     ] = '?getFile';
             $entry['previewImage'     ] = $this->getPreviewImage($row['Id'], $row['PreviewImage']);
             $entry['creator'          ] = (string)$this->getEMail($row["Email"], $row['Creator'], 'Galerie ' . $row['Title'] . ' (' . $cd . ")");
             $entries[] = $entry;
@@ -139,11 +137,12 @@ class Gallery extends AbstractController {
         return $content;
     }
 
-    public function showGallery($page) {
+    public function showGallery() {
         $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
         if($id == false) {
             throw new GalleryException('no gallery fetched!', GalleryException::NO_GALLERY_FETCHED);
         }
+        $page = (int)filter_input(INPUT_GET, 'page', FILTER_VALIDATE_INT);
 
         $stmt =
             "SELECT `imagegalleries`.`Title`, `imagegalleries`.`CreationDate`, `imagegalleries`.`Description`, `imagegalleries`.`PreviewImage`, " .
@@ -186,7 +185,6 @@ class Gallery extends AbstractController {
         }
 
         $dir->close();
-
         rsort($pics);
 
         $cd = $this->getDate($row['CreationDate']);
@@ -196,13 +194,10 @@ class Gallery extends AbstractController {
         $content->assign('mailaddr', (string)$this->getEMail($row["Email"], $row['Creator'], 'Galerie ' . $row['Title'] . ' (' . $cd . ")"));
         $content->assign('creationDate',      $cd);
         $content->assign('description',       $row['Description']);
-        #$content->assign('dllink',            '?getfile=');
-        #$content->assign('filename',          '$row[\'FileName\']');
         $content->assign('page',              (int)$page);
         $content->assign('pics',              $pics);
         $content->assign('editable',          true);
         $content->assign('maxFileUploads',    ini_get('max_file_uploads'));
-
         $content->appendCSSFile('lightbox.min.css');
         $content->appendJSFile('lightbox.min.js');
         return $content;
@@ -211,14 +206,13 @@ class Gallery extends AbstractController {
     public function create() {
         $content = new Content('Blog');
 
-        $rulset = [
-            'caption' => ['isNotEmpty'],
-            'description' => ['isNotEmpty']
-        ];
+        $rulset = new Ruleset();
+        $rulset->addNewRules('caption', new IsNotEmpty());
+        $rulset->addNewRules('description', new IsNotEmpty());
 
+        $validator = new Validator($rulset);
         $values = [];
 
-        $validator = new DataValidator($rulset);
         $error = $validator->validate($_POST, $values);
         $content->assignArray($values);
 
@@ -276,7 +270,44 @@ class Gallery extends AbstractController {
         #return $view->getContent();
     }
 
+    public function delete($all = false) {
+        $id = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
+        if($id == false) {
+            throw new GalleryException('no gallery fetched!', GalleryException::NO_GALLERY_FETCHED);
+        }
 
+        $stmt = "DELETE FROM `{TABLE_PREFIX}_imagegalleries` WHERE `Id` = '%s' AND `PathId` = '%s'";
+
+        if(!$all) {
+            $stmt .= "AND `UserId` = '" . $this->database->escape($this->user->getUserId()) . "'";
+        }
+
+        if(!$this->database->delete($stmt, [$id, $this->pathId])) {
+            throw new ResolverException("no entry found", ResolverException::NO_PERMISSION);
+        }
+
+        $path = $this->getGalleryPath($id);
+        if(!is_dir($path . '/thumb/')) {
+            throw new GalleryException("path <$path> is invalid", GalleryException::INVALID_PATH);
+        }
+
+        $dir = dir($path . '/thumb/');
+
+        while(false !== ($entry = $dir->read())) {
+            if($entry == '.' || $entry == '..') {
+                continue;
+            }
+
+            unlink($path . '/thumb/' . $entry);
+            unlink($path . '/high/' . $entry);
+        }
+
+        $dir->close();
+        rmdir($path . '/thumb/');
+        rmdir($path . '/high/');
+        rmdir($path);
+        return new Content();
+    }
 
 
 
@@ -309,58 +340,7 @@ class Gallery extends AbstractController {
 
 
 
-    public function delete($all = false) {
-        unset($all);
 
-        $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
-        if($id == false) {
-            throw new GalleryException('no gallery fetched!', GalleryException::NO_GALLERY_FETCHED);
-        }
-
-
-
-
-        $stmt =
-            "SELECT `sfw_media`.`Path`, `sfw_media`.`Id` " .
-            "FROM `{TABLE_PREFIX}_imagegalleries` AS `sfw_imagegalleries` " .
-            "LEFT JOIN `sfw_media`" .
-            "ON `sfw_imagegalleries`.`MediaId` = `sfw_media`.`Id` " .
-            "WHERE `sfw_imagegalleries`.`Id` = %s";
-
-        $data = $this->database->selectRow($stmt, [$galleryId]);
-        $path = SFW_GALLERY_PATH . $data['Path'] . '/.htaccess';
-        file_put_contents($path, 'deny from all');
-
-        $stmt =
-            "UPDATE `sfw_media` " .
-            "SET `sfw_media`.`Deleted` = '1' " .
-            "WHERE `sfw_media`.`Id` = '%s'";
-
-        if($this->database->update($stmt, [$data['Id']]) > 1) {
-            $this->dto->getErrorProvider()->addError(
-                SFW_Error_Provider::ERR_DEL,
-                ['<NAME>' => 'Die Galerie']
-            );
-        }
-
-        $stmt =
-            "UPDATE `sfw_imagegalleries` " .
-            "SET `sfw_imagegalleries`.`Deleted` = '1' " .
-            "WHERE `sfw_imagegalleries`.`MediaId` = '%s'";
-
-        if($this->database->update($stmt, [$data['Id']]) != 1) {
-            $this->dto->getErrorProvider()->addError(
-                SFW_Error_Provider::ERR_DEL,
-                ['<NAME>' => 'Die Galerie']
-            );
-        }
-
-        $this->dto->setSaveSuccess(true);
-
-        return
-            $this->dto->getErrorProvider()->getContent() .
-            $this->getSummary($page);
-    }
 
     public function deleteImg() {
         $this->deleteImage(
@@ -464,10 +444,7 @@ class Gallery extends AbstractController {
             'error' => false,
             'msg' => 'Alles chick.'
         );
-
-
-
-            }
+    }
 
 
 
@@ -485,10 +462,7 @@ class Gallery extends AbstractController {
             "FROM `sfw_imagegalleries` " .
             "LEFT JOIN `sfw_media` " .
             "ON `sfw_media`.`Id` = `sfw_imagegalleries`.`MediaId` " .
-            "LEFT JOIN `sfw_division` " .
-            "ON `sfw_division`.`DivisionId` = `sfw_media`.`DivisionId` " .
-            "WHERE `sfw_imagegalleries`.`Id` = '%s' " .
-            "AND `sfw_division`.`Module` = '%s' ";
+            "WHERE `sfw_imagegalleries`.`Id` = '%s' ";
 
         $rv = $this->db->selectRow($stmt, array($galid, $this->category));
 
@@ -565,10 +539,9 @@ class Gallery extends AbstractController {
             "FROM `sfw_imagegalleries` " .
             "LEFT JOIN `sfw_media` " .
             "ON `sfw_media`.`Id` = `sfw_imagegalleries`.`MediaId` " .
-            "LEFT JOIN `sfw_division` " .
-            "ON `sfw_division`.`DivisionId` = `sfw_media`.`DivisionId` " .
-            "WHERE `sfw_imagegalleries`.`Id` = '%s' " .
-            "AND `sfw_division`.`Module` = '%s' ";
+
+
+            "WHERE `sfw_imagegalleries`.`Id` = '%s' ";
 
         $rv = $this->db->selectRow($stmt, array($id, $this->category));
 
@@ -587,10 +560,8 @@ class Gallery extends AbstractController {
             throw new GalleryException("file <$file> is not a valid image!", GalleryException::INVALID_IMAGE);
         }
 
-        $stmt =
-            "UPDATE `sfw_imagegalleries` " .
-            "SET `PreviewImage` = '%s' " .
-            "WHERE `Id` = %s";
+        $stmt = "UPDATE `{TABLE_PREFIX}_imagegalleries` SET `PreviewImage` = '%s' WHERE `Id` = '%s'";
+
 
         if($this->db->update($stmt, array($fileName, $id)) != 1) {
             throw new GalleryException('updating imagegalleries failed!', GalleryException::UPDATING_GALLERY_FAILED);
