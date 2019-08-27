@@ -148,8 +148,7 @@ class Gallery extends AbstractController {
             "SELECT `imagegalleries`.`Title`, `imagegalleries`.`CreationDate`, `imagegalleries`.`Description`, `imagegalleries`.`PreviewImage`, " .
             "`user`.`Email`,  CONCAT(`user`.`FirstName`, ' ', `user`.`LastName`) AS `Creator` " .
             "FROM `{TABLE_PREFIX}_imagegalleries` AS `imagegalleries` " .
-            "LEFT JOIN `{TABLE_PREFIX}_user` AS `user` " .
-            "ON `user`.`Id` = `imagegalleries`.`UserId` " .
+            "LEFT JOIN `{TABLE_PREFIX}_user` AS `user` ON `user`.`Id` = `imagegalleries`.`UserId` " .
             "WHERE `imagegalleries`.`Id` = '%s' ";
 
         $row = $this->database->selectRow($stmt, [$id]);
@@ -170,12 +169,10 @@ class Gallery extends AbstractController {
             if($entry == '.' || $entry == '..') {
                 continue;
             }
-
             $fi = pathinfo($path . '/thumb/' . $entry);
             if(strtolower($fi['extension']) != 'jpg' && strtolower($fi['extension']) != 'png') {
                 continue;
             }
-
             $pic = [];
             $pic['lnk'] = '/' . $path . '/high/' . $entry;
             $pic['ttp'] = $entry;
@@ -260,14 +257,6 @@ class Gallery extends AbstractController {
 
         $content->dataWereModified();
         return $content;
-
-        #$url = '/' . strtolower($this->category) . '/bilder?do=showgallery&g=' . $id . '&p=0';
-
-
-        #$view = new SFW_View();
-        #$view->assign('url', $url);
-        #$view->assignTpl('JumpTo');
-        #return $view->getContent();
     }
 
     public function delete($all = false) {
@@ -276,17 +265,72 @@ class Gallery extends AbstractController {
             throw new GalleryException('no gallery fetched!', GalleryException::NO_GALLERY_FETCHED);
         }
 
+        $tokens = explode('__', $id);
+        if(count($tokens) == 1) {
+            $this->deletGallery($tokens[0], $all);
+        } else {
+            $this->deleteImage(array_shift($tokens), implode('__', $tokens), $all);
+        }
+        return new Content();
+    }
+
+    public function changePrevImg($galleryId, $fileName) {
+#        if(!$this->ctrl->hasCreatePermission()) {
+#            return false;
+#        }
+
+        $stmt =
+            "SELECT `imagegalleries`.`PreviewImage` " .
+            "FROM `{TABLE_PREFIX}_imagegalleries` AS `imagegalleries` " .
+            "WHERE `imagegalleries`.`Id` = '%s' AND `imagegalleries`.`PathId` = '%s' ";
+
+        $row = $this->database->selectRow($stmt, [$galleryId, $this->pathId]);
+
+        if(empty($row)) {
+            throw new GalleryException('no valid gallery fetched!', GalleryException::NO_GALLERY_FETCHED);
+        }
+
+        if($fileName == $row['PreviewImage']) {
+            throw new GalleryException('unable to delete preview-img!', GalleryException::COULD_NOT_DELETE_PREVIEW_IMAGE);
+        }
+
+        // Prüfen, ob Bild im Ordner vorhanden...
+        $file = $this->getGalleryPath($galleryId) . '/thumb/' . $fileName;
+
+        if(!is_file($file)) {
+            throw new GalleryException("file <$file> is not a valid image!", GalleryException::INVALID_IMAGE);
+        }
+
+        $stmt = "UPDATE `{TABLE_PREFIX}_imagegalleries` SET `PreviewImage` = '%s' WHERE `Id` = '%s'";
+
+        if($this->database->update($stmt, [$fileName, $galleryId]) != 1) {
+            throw new GalleryException('updating imagegalleries failed!', GalleryException::UPDATING_GALLERY_FAILED);
+        }
+    }
+
+    protected function getGalleryPath($galleryId) {
+        return 'img' . DIRECTORY_SEPARATOR . $this->pathId . DIRECTORY_SEPARATOR . $galleryId . DIRECTORY_SEPARATOR;
+    }
+
+    protected function getPreviewImage($id = 0, $image = '') {
+        if ($image == '') {
+            return "/img/layout/empty.png";
+        }
+        return '/' . $this->getGalleryPath($id) . 'thumb/' . $image;
+    }
+
+    protected function deletGallery($galleryId, bool $all = false) {
         $stmt = "DELETE FROM `{TABLE_PREFIX}_imagegalleries` WHERE `Id` = '%s' AND `PathId` = '%s'";
 
         if(!$all) {
             $stmt .= "AND `UserId` = '" . $this->database->escape($this->user->getUserId()) . "'";
         }
 
-        if(!$this->database->delete($stmt, [$id, $this->pathId])) {
+        if(!$this->database->delete($stmt, [$galleryId, $this->pathId])) {
             throw new ResolverException("no entry found", ResolverException::NO_PERMISSION);
         }
 
-        $path = $this->getGalleryPath($id);
+        $path = $this->getGalleryPath($galleryId);
         if(!is_dir($path . '/thumb/')) {
             throw new GalleryException("path <$path> is invalid", GalleryException::INVALID_PATH);
         }
@@ -306,94 +350,50 @@ class Gallery extends AbstractController {
         rmdir($path . '/thumb/');
         rmdir($path . '/high/');
         rmdir($path);
-        return new Content();
     }
 
-
-
-
-
-
-
-
-
-
-
-
-    protected function getGalleryPath($id) {
-        return 'img' . DIRECTORY_SEPARATOR . $this->pathId . DIRECTORY_SEPARATOR . $id . DIRECTORY_SEPARATOR;
-    }
-
-    protected function getPreviewImage($id = 0, $image = '') {
-        if ($image == '') {
-            return "/img/layout/empty.png";
-        }
-        return '/' . $this->getGalleryPath($id) . 'thumb/' . $image;
-    }
-
-
-
-
-
-
-
-
-
-
-
-
-    public function deleteImg() {
-        $this->deleteImage(
-            $this->dto->getNumeric('g'),
-            $this->dto->getFileName('id')
-        );
-        return
-            $this->dto->getErrorProvider()->getContent() .
-            $this->getGallery($this->dto->getNumeric('g'), $page);
-    }
-
-    public function chgprevImg() {
-        $this->changePrevImg(
-            $this->dto->getNumeric('g'),
-            $this->dto->getFileName('id')
-        );
-        return
-            $this->dto->getErrorProvider()->getContent() .
-            $this->getGallery($this->dto->getNumeric('g'), $page);
-    }
-
-    public function addImg() {
-        $galid = $this->addImg($this->dto->getNumeric('g'));
-
+    protected function deleteImage($galleryId, $fileName, bool $all = false) {
         $stmt =
-            "SELECT `sfw_media`.`Path`, `sfw_imagegalleries`.`PreviewImage`, " .
-            "`sfw_media`.`Id` " .
-            "FROM `sfw_imagegalleries` " .
-            "LEFT JOIN `sfw_media` " .
-            "ON `sfw_media`.`Id` = `sfw_imagegalleries`.`MediaId` " .
-            "WHERE `sfw_imagegalleries`.`Id` = '%s' ";
+            "SELECT `imagegalleries`.`PreviewImage` " .
+            "FROM `{TABLE_PREFIX}_imagegalleries` AS `imagegalleries` " .
+            "WHERE `imagegalleries`.`Id` = '%s' AND `imagegalleries`.`PathId` = '%s' ";
 
-        $rv = $this->db->selectRow($stmt, array($galid));
-
-        if(empty($rv)) {
-            throw new SFW_Exception(__METHOD__ . ': no gallery fetched!');
+        if(!$all) {
+            $stmt .= "AND `UserId` = '" . $this->database->escape($this->user->getUserId()) . "'";
         }
 
-        if(!is_dir($rv["Path"] . '/thumb/')) {
-            throw new SFW_Exception(': path <' . $rv["Path"] . '> is invalid');
+        $row = $this->database->selectRow($stmt, [$galleryId, $this->pathId]);
+
+        if(empty($row)) {
+            throw new GalleryException('no valid gallery fetched!', GalleryException::NO_GALLERY_FETCHED);
         }
 
-        $stmt =
-            "UPDATE `sfw_media` " .
-            "SET `sfw_media`.`Deleted` = '0' " .
-            "WHERE `sfw_media`.`Id` = '%s'";
-
-        if($this->db->update($stmt, array($rv['Id'])) != 1) {
-            $this->dto->getErrorProvider()->addError(
-                SFW_Error_Provider::ERR_UNDEL,
-                array('<NAME>' => 'Die Galerie')
-            );
+        if($fileName == $row['PreviewImage']) {
+            throw new GalleryException('unable to delete preview-img!', GalleryException::COULD_NOT_DELETE_PREVIEW_IMAGE);
         }
+
+        $path = $this->getGalleryPath($galleryId);
+
+        unlink($path . 'thumb/' . $fileName);
+        unlink($path . 'regular/' . $fileName);
+        unlink($path . 'high/' . $fileName);
+    }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    public function addImage() {
 
         $chunk = explode(';', $this->dto->getData('file'));
         $type = explode(':', $chunk[0]);
@@ -422,7 +422,7 @@ class Gallery extends AbstractController {
 
         $cnt = count(glob($rv["Path"] . '/high/*'));
         if($cnt >= 999) {
-            throw new GalleryException('more then <' . $cnt . '> images are not allowed');
+            throw new GalleryException("more then <$cnt> images are not allowed");
         }
 
         $filename = str_repeat('0', 4 - mb_strlen('' . $cnt)) . ++$cnt . '.' . $type;
@@ -444,53 +444,6 @@ class Gallery extends AbstractController {
             'error' => false,
             'msg' => 'Alles chick.'
         );
-    }
-
-
-
-
-
-
-
-    protected function deleteImage($galid, $fileName) {
-        if(!$this->ctrl->hasDeletePermission()) {
-            return false;
-        }
-
-        $stmt =
-            "SELECT `sfw_media`.`Path`, `sfw_imagegalleries`.`PreviewImage` " .
-            "FROM `sfw_imagegalleries` " .
-            "LEFT JOIN `sfw_media` " .
-            "ON `sfw_media`.`Id` = `sfw_imagegalleries`.`MediaId` " .
-            "WHERE `sfw_imagegalleries`.`Id` = '%s' ";
-
-        $rv = $this->db->selectRow($stmt, array($galid, $this->category));
-
-        if(empty($rv)) {
-            throw new GalleryException('no valid gallery fetched!', GalleryException::NO_GALLERY_FETCHED);
-        }
-
-        if($fileName == $rv['PreviewImage']) {
-            throw new GalleryException('unable to delete preview-img!', GalleryException::COULD_NOT_DELETE_PREVIEW_IMAGE);
-        }
-
-        unlink($rv['Path'] . '/thumb/' . $fileName);
-        unlink($rv['Path'] . '/regular/' . $fileName);
-        unlink($rv['Path'] . '/high/' . $fileName);
-        $this->dto->setSaveSuccess(treu);
-
-        return true;
-    }
-
-    private function getPreviewPath($path, $file) {
-        #if($file == '') {
-            return '/public/images/content/thumb/empty.png';
-        #}
-
-        if(is_file($path . '/thumb/' . $file)) {
-            return '/' . $path . '/thumb/' . $file;
-        }
-        throw new GalleryException("preview <$path/thumb/$file> does not exist", GalleryException::PREVIEW_FILE_DOES_NOT_EXIST);
     }
 
     private function generateThumb($file, $size, $src, $des) {
@@ -527,47 +480,6 @@ class Gallery extends AbstractController {
                 imagedestroy($new);
                 return true;
         }
-    }
-
-    private function changePrevImg($id, $fileName) {
-        if(!$this->ctrl->hasCreatePermission()) {
-            return false;
-        }
-
-        $stmt =
-            "SELECT `sfw_media`.`Path`, `sfw_imagegalleries`.`PreviewImage` " .
-            "FROM `sfw_imagegalleries` " .
-            "LEFT JOIN `sfw_media` " .
-            "ON `sfw_media`.`Id` = `sfw_imagegalleries`.`MediaId` " .
-
-
-            "WHERE `sfw_imagegalleries`.`Id` = '%s' ";
-
-        $rv = $this->db->selectRow($stmt, array($id, $this->category));
-
-        if(empty($rv)) {
-            throw new GalleryException('no valid gallery fetched!', GalleryException::NO_GALLERY_FETCHED);
-        }
-
-        if($fileName == $rv['PreviewImage']) {
-            throw new GalleryException('unable to change preview-img!', GalleryException::COULD_NOT_CHANGE_PREVIEW_IMAGE);
-        }
-
-        // Prüfen, ob Bild im Ordner vorhanden...
-        $file = $rv["Path"] . '/thumb/' . $fileName;
-
-        if(!is_file($file)) {
-            throw new GalleryException("file <$file> is not a valid image!", GalleryException::INVALID_IMAGE);
-        }
-
-        $stmt = "UPDATE `{TABLE_PREFIX}_imagegalleries` SET `PreviewImage` = '%s' WHERE `Id` = '%s'";
-
-
-        if($this->db->update($stmt, array($fileName, $id)) != 1) {
-            throw new GalleryException('updating imagegalleries failed!', GalleryException::UPDATING_GALLERY_FAILED);
-        }
-        $this->dto->setSaveSuccess();
-        return true;
     }
 }
 
