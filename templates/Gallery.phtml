@@ -23,97 +23,116 @@
 
 ?>
 <h1><?php echo($this->caption);?></h1>
-<div class="mt-4">
-    <?php echo($this->description);?>
+<div class="media mt-4">
+    <?php if($this->permission->createAllowed()): ?>
+    <img id="preview-image" class="rounded mr-4" src="<?php echo($this->previewImage);?>" >
+    <?php endif; ?>
+    <div class="media-body">
+        <?php echo($this->description);?>
+        <small style="font-style: italic;">
+            <div>Erstellt von <?php echo($this->mailaddr); ?> am <?php echo($this->creationDate); ?></div>
+        </small>
+    </div>
 </div>
-<small>
-    Erstellt von <?php echo($this->mailaddr); ?> am <?php echo($this->creationDate); ?>
-</small>
 <p class="mt-4">
     Zurück zur
     <a class="link" href="?p=<?php echo($this->page);?>">
         Übersichtenseite
     </a>
 </p>
-    <?php if($this->permission->createAllowed()): ?>
-    <div class="fileuploadArea"></div>
-    <input id="curgal" type="hidden" value="<?php echo($this->id); ?>" />
-    <input id="curpage" type="hidden" value="<?php echo($this->page); ?>" />
-    <div class="dropzone mb-4">
-        <a class="btnRemove noshow" href="#">x</a>
-        <div class="noshow clearFileSelect">
-            <input
-                class="fileselectupload"
-                type="file"
-                name="file"
-                style="width: 24em;"
-            />
-        </div>
+<?php if($this->permission->createAllowed()): ?>
+<div class="fileuploadArea"></div>
+<input id="curgal" type="hidden" value="<?php echo($this->id); ?>" />
+<input id="curpage" type="hidden" value="<?php echo($this->page); ?>" />
+<div class="dropzone mb-4">
+    <a class="btnRemove noshow" href="#">x</a>
+    <div class="clearFileSelect">
         <input class="fileselectupload" type="file" name="file" style="width: 24em;" multiple="multiple">
-
         <button
             type="button"
-            class="btn btn-success btn-sm"
+            class="btn btn-success btn-sm btnUpload noshow"
             data-url="<?php echo($this->getCurrentPath()); ?>"
         >hochladen</button>
-
-
-        <?php /*
-        <div class="fileSelectDescr">
-            Datei hier ablegen oder klicken zum Hochladen
-        </div>
-        <div class="currfile" ></div>
-         *
-         */?>
     </div>
-    <?php endif; ?>
-    <div class="d-flex flex-wrap">
-        <?php foreach($this->pics as $k => $v): ?>
-        <div class="p-2 ">
-            <a href="<?php echo($v['lnk']);?>" rel="lightbox-gallerie">
-                <img class="img-thumbnail" alt="" src="<?php echo($v['src']); ?>" title="<?php echo($v['ttp']);?>" />
+
+    <?php /*
+    <div class="fileSelectDescr">
+        Datei hier ablegen oder klicken zum Hochladen
+    </div>
+    <div class="currfile" ></div>
+     *
+     */?>
+
+</div>
+<div class="noshow progress mb-1 ">
+    <div
+        id="progressbar-file"
+        class="progress-bar progress-bar-striped bg-success progress-bar-animated"
+        role="progressbar"
+        style="width: 0%"
+        aria-valuenow="0"
+        aria-valuemin="0"
+        aria-valuemax="100"
+    >0%</div>
+</div>
+<div class="noshow progress mb-4">
+    <div
+        id="progressbar-all"
+        class="progress-bar progress-bar-striped bg-success progress-bar-animated"
+        role="progressbar"
+        style="width: 0%"
+        aria-valuenow="0"
+        aria-valuemin="0"
+        aria-valuemax="100"
+    >0% [Datei 5 von 7]</div>
+</div>
+
+<?php endif; ?>
+<div class="d-flex flex-wrap">
+    <?php foreach($this->pics as $k => $v): ?>
+    <div class="p-1 " id="<?php echo($this->getPathSimplified()); ?>_recordset_<?php echo($this->id . '__' . str_replace('.', '_', $v['ttp']));?>">
+        <a href="<?php echo($v['lnk']);?>" rel="lightbox-gallerie">
+            <img class="" alt="" src="<?php echo($v['src']); ?>" title="<?php echo($v['ttp']);?>" />
+        </a>
+        <!--
+        <div>
+            <a
+                id="clid<?php /*echo($entry['id']);*/?>"
+                style="font-weight: bold; font-size: 0.8em;"
+                class="fold"
+                title="Hier klicken um Kommentare zu lesen"
+                href="#"
+            >
+                12 Kommentare &#9660;
             </a>
-            <!--
-            <div>
-                <a
-                    id="clid<?php /*echo($entry['id']);*/?>"
-                    style="font-weight: bold; font-size: 0.8em;"
-                    class="fold"
-                    title="Hier klicken um Kommentare zu lesen"
-                    href="#"
-                >
-                    12 Kommentare &#9660;
-                </a>
-            </div>
-            -->
-            <?php if($this->permission->createAllowed()): ?>
-            <div class="mt-2">
-                <?php if($v['pre']): ?>
-                <i>Vorschaubild</i>
-                <?php else: ?>
-                <button
-                    type="button"
-                    class="btn btn-danger btn-sm"
-                    data-toggle="modal"
-                    data-target="#deleteDialogModal"
-                    data-url="<?php echo($this->getCurrentPath()); ?>"
-                    data-item-id="<?php echo($this->id . '__' . $v['ttp']);?>"
-                    data-form-id="<?php echo($this->getPathSimplified()); ?>"
-                >löschen</button>
-                <button
-                    type="button"
-                    class="btn btn-success btn-sm btnChangePreview"
-                    data-url="<?php echo($this->getCurrentPath()); ?>"
-                    data-item-id="<?php echo($this->id . '__' . $v['ttp']);?>"
-                >Vorschau</button>
-                <?php endif; ?>
-            </div>
-            <?php endif; ?>
         </div>
-        <?php endforeach; ?>
+        -->
+        <?php if($this->permission->createAllowed()): ?>
+        <div class="mt-2">
+            <button
+                type="button"
+                class="btn btn-danger btn-sm"
+                data-toggle="modal"
+                data-target="#deleteDialogModal"
+                data-url="<?php echo($this->getCurrentPath()); ?>"
+                data-item-id="<?php echo($this->id . '__' . $v['ttp']);?>"
+                data-form-id="<?php echo($this->getPathSimplified()); ?>"
+            >löschen</button>
+            <button
+                type="button"
+                class="btn btn-success btn-sm btnChangePreview"
+                data-url="<?php echo($this->getCurrentPath()); ?>"
+                data-item-id="<?php echo($this->id . '__' . $v['ttp']);?>"
+                data-form-id="<?php echo($this->getPathSimplified()); ?>"
+            >Vorschau</button>
+        </div>
+        <?php endif; ?>
     </div>
-    <?php if(count($this->pics) > 16): ?>
-    <p>
-        Hier geht's zurück zum <a class="link" href="#">Seitenanfang</a>
-    </p>
-    <?php endif; ?>
+    <?php endforeach; ?>
+</div>
+<?php if(count($this->pics) > 16): ?>
+<p>
+    Hier geht's zurück zum <a class="link" href="#">Seitenanfang</a>
+</p>
+<?php endif; ?>
+<script src="/js/gallery.js"> </script>

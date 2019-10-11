@@ -25,14 +25,14 @@ namespace SFW2\Gallery;
 use SFW2\Core\SFW2Exception;
 
 class GalleryException extends SFW2Exception {
+    const COULD_NOT_CHANGE_PREVIEW_IMAGE    = 1;
     const INVALID_PATH                      = 2;
-    const INVALID_IMAGE                     = 9;
     const COULD_NOT_DELETE_PREVIEW_IMAGE    = 3;
     const PREVIEW_FILE_DOES_NOT_EXIST       = 4;
     const COULD_NOT_CREATE_GALLERY_PATH     = 5;
-    const COULD_NOT_CHANGE_PREVIEW_IMAGE    = 1;
     const COULD_NOT_INSERT_INTO_MEDIA_TABLE = 6;
     const INSERTATION_OF_GALLERY_FAILED     = 7;
     const NO_GALLERY_FETCHED                = 8;
+    const INVALID_IMAGE                     = 9;
     const UPDATING_GALLERY_FAILED           = 10;
 }
