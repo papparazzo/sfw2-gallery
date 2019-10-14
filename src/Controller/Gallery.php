@@ -38,12 +38,14 @@ use SFW2\Controllers\Controller\Helper\DateTimeHelperTrait;
 use SFW2\Controllers\Controller\Helper\ImageHelperTrait;
 use SFW2\Controllers\Controller\Helper\EMailHelperTrait;
 
+use SFW2\Gallery\Helper\GalleryHelperTrait;
 use SFW2\Gallery\GalleryException;
 
 class Gallery extends AbstractController {
 
     use DateTimeHelperTrait;
     use ImageHelperTrait;
+    use GalleryHelperTrait;
     use EMailHelperTrait;
 
     /**
@@ -142,7 +144,7 @@ class Gallery extends AbstractController {
         return $content;
     }
 
-    public function showGallery() {
+    public function showGallery() : Content {
         $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
         if($id == false) {
             throw new GalleryException('no gallery fetched!', GalleryException::NO_GALLERY_FETCHED);
@@ -163,30 +165,11 @@ class Gallery extends AbstractController {
         }
 
         $path = $this->getGalleryPath($id);
-        if(!is_dir($path . '/thumb/')) {
-            throw new GalleryException("path <$path> is invalid", GalleryException::INVALID_PATH);
-        }
-
-        $dir = dir($path . '/thumb/');
         $pics = [];
-
-        while(false !== ($entry = $dir->read())) {
-            if($entry == '.' || $entry == '..') {
-                continue;
-            }
-            $fi = pathinfo($path . '/thumb/' . $entry);
-            if(strtolower($fi['extension']) != 'jpg' && strtolower($fi['extension']) != 'png') {
-                continue;
-            }
-            $pic = [];
-            $pic['lnk'] = '/' . $path . '/high/' . $entry;
-            $pic['ttp'] = $entry;
-            $pic['src'] = '/' . $path . '/thumb/' . $entry;
-            $pics[] = $pic;
+        if(is_dir($path . '/thumb/')) {
+            $pics = $this->getImageList($path);
         }
 
-        $dir->close();
-        rsort($pics);
         $cd = $this->getDate($row['CreationDate']);
         $content = new Content('SFW2\\Gallery\\Gallery');
         $content->assign('caption',           $row['Title']);
@@ -204,7 +187,7 @@ class Gallery extends AbstractController {
         return $content;
     }
 
-    public function create() {
+    public function create() : Content {
         $content = new Content('Gallery');
 
         $rulset = new Ruleset();
@@ -236,12 +219,6 @@ class Gallery extends AbstractController {
             ]
         );
 
-        $folder = $this->getGalleryPath($id);
-
-        if(!mkdir($folder . '/thumb', 0777, true) || !mkdir($folder . '/high')) {
-            throw new GalleryException("could not create gallery-path <$folder>", GalleryException::COULD_NOT_CREATE_GALLERY_PATH);
-        }
-
         $cd = $this->getShortDate();
         $content = new Content('Gallery');
         $content->assign('id',           ['value' => $id]);
@@ -257,7 +234,7 @@ class Gallery extends AbstractController {
         return $content;
     }
 
-    public function delete($all = false) {
+    public function delete($all = false) : Content {
         $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING);
         if($id == false) {
             throw new GalleryException('no gallery fetched!', GalleryException::NO_GALLERY_FETCHED);
@@ -272,7 +249,7 @@ class Gallery extends AbstractController {
         return new Content();
     }
 
-    public function changePreview() {
+    public function changePreview() : Content {
         $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING);
         $p = strpos($id, '__');
         if($p === false) {
@@ -287,11 +264,11 @@ class Gallery extends AbstractController {
         return new Content();
     }
 
-    protected function getGalleryPath($galleryId) {
+    protected function getGalleryPath(int $galleryId) : string {
         return 'img' . DIRECTORY_SEPARATOR . $this->pathId . DIRECTORY_SEPARATOR . $galleryId . DIRECTORY_SEPARATOR;
     }
 
-    protected function getPreviewImage($id = 0) {
+    protected function getPreviewImage(int $id = 0) : string {
         if($id == 0) {
             return "/img/layout/empty.png";
         }
@@ -303,7 +280,7 @@ class Gallery extends AbstractController {
         return '/' . $preview;
     }
 
-    protected function deletGallery($galleryId, bool $all = false) {
+    protected function deletGallery(int $galleryId, bool $all = false) : void {
         $stmt = "DELETE FROM `{TABLE_PREFIX}_imagegalleries` WHERE `Id` = '%s' AND `PathId` = '%s'";
 
         if(!$all) {
@@ -339,7 +316,7 @@ class Gallery extends AbstractController {
         rmdir($path);
     }
 
-    protected function deleteImage($galleryId, $fileName, bool $all = false) {
+    protected function deleteImage(int $galleryId, string $fileName, bool $all = false) : void {
         $stmt =
             "SELECT `imagegalleries`.`Id` " .
             "FROM `{TABLE_PREFIX}_imagegalleries` AS `imagegalleries` " .
@@ -361,81 +338,23 @@ class Gallery extends AbstractController {
         unlink($path . 'high/' . $fileName);
     }
 
-    public function addImage() {
+    public function addImage() : Content {
         $galleryId = filter_input(INPUT_POST, 'gallery', FILTER_SANITIZE_STRING);
 
-        $chunk = explode(';', $_POST['file']);
-        $type = explode(':', $chunk[0]);
-        $type = $type[1];
-        $data = explode(',', $chunk[1]);
+        $folder = $this->getGalleryPath($galleryId);
 
-        switch($type) {
-            case 'image/pjpeg':
-            case 'image/jpeg':
-            case 'image/jpg':
-                $type = 'jpg';
-                break;
+        $filename = $this->addFile($folder, self::DIMENSIONS);
 
-            case 'image/png':
-            case 'image/x-png':
-                $type = 'png';
-                break;
+        $highFolder = $folder . DIRECTORY_SEPARATOR . 'high' . DIRECTORY_SEPARATOR;
 
-            default:
-                throw new GalleryException("invalid image type <$type> given!", GalleryException::INVALID_IMAGE);
-        }
-        $path = $this->getGalleryPath($galleryId);
-        $cnt = count(glob($path  . '/high/*'));
-        if($cnt >= 999) {
-            throw new GalleryException("more then <$cnt> images are not allowed");
+        if(!is_file($folder . self::PREVIEW_FILE)) {
+            $this->generatePreview($filename, self::DIMENSIONS, $highFolder, $folder);
         }
 
-        $filename = str_repeat('0', 4 - mb_strlen((string)$cnt)) . ++$cnt . '.' . $type;
-
-        if(!file_put_contents($path . '/high/' . $filename, base64_decode($data[1]))) {
-            throw new GalleryException("could not store file <$filename> in path <$path/high/>");
-        }
-
-        $this->generateThumb($filename, self::DIMENSIONS, $path . '/high/', $path . '/thumb/');
-
-        if(!is_file($path . self::PREVIEW_FILE)) {
-            $this->generatePreview($filename, self::DIMENSIONS, $path . '/high/', $path);
-        }
-
-        #$this->ctrl->updateModificationDate();
         return new Content();
     }
 
-    private function generateThumb($file, $desHeight, $src, $des) {
-        $srcFile = $src . '/' . $file;
-        if(!is_file($srcFile)) {
-            return false;
-        }
-
-        list($srcWidth, $srcHeight, $srcTyp) = getimagesize($srcFile);
-
-        $desWidth = $srcWidth / $srcHeight * $desHeight;
-        $new = imagecreatetruecolor($desWidth, $desHeight);
-
-        switch($srcTyp) {
-            case IMAGETYPE_JPEG:
-                $old = imagecreatefromjpeg($srcFile);
-                imagecopyresampled($new, $old, 0, 0, 0, 0, $desWidth, $desHeight, $srcWidth, $srcHeight);
-                imagejpeg($new, $des . '/' . $file, 100);
-                break;
-
-            case IMAGETYPE_PNG:
-                $old = imagecreatefrompng($srcFile);
-                imagecopyresampled($new, $old, 0, 0, 0, 0, $desWidth, $desHeight, $srcWidth, $srcHeight);
-                imagepng($new, $des . '/' . $file);
-                break;
-        }
-        imagedestroy($old);
-        imagedestroy($new);
-        return true;
-    }
-
-    public function generatePreview($file, $dimensions, $src, $des) {
+    protected function generatePreview(string $file, int $dimensions, string $src, string $des) : void {
         $srcFile = $src . '/' . $file;
 
         if(!is_file($srcFile)) {
@@ -472,5 +391,28 @@ class Gallery extends AbstractController {
         imagedestroy($new);
         imagedestroy($old);
     }
-}
 
+    protected function getImageList(string $path) : array{
+        $dir = dir($path . '/thumb/');
+        $pics = [];
+
+        while(false !== ($entry = $dir->read())) {
+            if($entry == '.' || $entry == '..') {
+                continue;
+            }
+            $fi = pathinfo($path . '/thumb/' . $entry);
+            if(strtolower($fi['extension']) != 'jpg' && strtolower($fi['extension']) != 'png') {
+                continue;
+            }
+            $pic = [];
+            $pic['lnk'] = '/' . $path . '/high/' . $entry;
+            $pic['ttp'] = $entry;
+            $pic['src'] = '/' . $path . '/thumb/' . $entry;
+            $pics[] = $pic;
+        }
+
+        $dir->close();
+        rsort($pics);
+        return $pics;
+    }
+}
