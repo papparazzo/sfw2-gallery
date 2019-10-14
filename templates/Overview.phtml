@@ -1,0 +1,141 @@
+<?php
+
+/**
+ *  SFW2 - SimpleFrameWork
+ *
+ *  Copyright (C) 2019  Stefan Paproth
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as
+ *  published by the Free Software Foundation, either version 3 of the
+ *  License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ *
+ */
+
+?>
+<h1><?php echo($this->title); ?></h1>
+<p><?php echo($this->about); ?></p>
+<?php if(!$this->permission->createAllowed()): ?>
+<div class="alert alert-success" role="alert">
+    <strong>Anmerkung</strong>
+    <p>
+    Wenn ein Bild gelöscht werden soll dann schreib bitte einen entsprechenden Hinweis an <?php echo($this->webmaster);?>.
+    </p>
+</div>
+<?php else:?>
+<form id="<?php echo($this->getPathSimplified()); ?>" class="noshow">
+    <div class="row">
+        <label for="title" class="col-sm-3 col-form-label">Liga</label>
+        <div class="col-sm-8">
+            <input
+                type="text"
+                class="form-control form-control-sm"
+                maxlength="100"
+                title="Gib hier bitte die Liga (z.B. 1. Herren) ein."
+                name="title"
+                value=""
+                required
+            />
+            <div class="invalid-feedback"></div>
+        </div>
+    </div>
+    <div class="row">
+        <label for="description" class="col-sm-3 col-form-label">Beschreibung</label>
+        <div class="col-sm-8">
+            <input
+                type="text"
+                class="form-control form-control-sm"
+                maxlength="100"
+                title="Gib hier bitte eine kurze Beschreibung der Datei ein."
+                name="description"
+                value=""
+                required
+            />
+            <div class="invalid-feedback"></div>
+        </div>
+    </div>
+    <div class="row">
+        <label for="names" class="col-sm-3 col-form-label">Namen</label>
+        <div class="col-sm-8">
+            <input
+                type="text"
+                class="form-control form-control-sm"
+                maxlength="100"
+                title="Gib hier bitte die Namen der Spieler ein."
+                id="title"
+                name="names"
+                value=""
+                required
+            />
+            <div class="invalid-feedback"></div>
+        </div>
+    </div>
+    <div class="row">
+        <label for="division" class="col-sm-3 col-form-label">Datei</label>
+        <div class="col-sm-8 fileupload">
+            <div class="fileupload">
+                <!-- FIXME --- 8x ---- 8x --- !-->
+                <div class="custom-file">
+                    <input type="file" class="custom-file-input" id="customFile">
+                    <div class="invalid-feedback"></div>
+                    <label class="custom-file-label" for="customFile">Datei auswählen</label>
+                </div>
+
+                <script>
+                $(document).ready(function () {
+                    bsCustomFileInput.init();
+                });
+                </script>
+
+
+                    <?php /*
+                <div class="dropzone">
+                    <a class="btnRemove noshow" href="#">x</a>
+                    <div class="noshow clearFileSelect">
+                        <input
+                            class="fileselectupload"
+                            type="file"
+                            name="file"
+                            style="width: 24em;"
+                        />
+                    </div>
+                    <div class="fileSelectDescr">
+                        Datei hier ablegen oder klicken zum Hochladen
+                    </div>
+                    <div class="currfile" ></div>
+                </div>
+*/ ?>
+                <!-- 8x ---- 8x --- !-->
+
+            </div>
+        </div>
+    </div>
+</form>
+<button
+    type="button"
+    class="btn btn-success btn-sm"
+    data-toggle="modal"
+    data-target="#createDialogModal"
+    data-url="<?php echo($this->getCurrentPath()); ?>"
+    data-form-id="<?php echo($this->getPathSimplified()); ?>"
+>Neuer Eintrag</button>
+<div class="mt-3"></div>
+<?php endif; ?>
+<ul class="list-unstyled reload-data mt-5" data-url="<?php echo($this->getCurrentPath()); ?>" >
+</ul>
+<button
+    class="btn btn-secondary btn-sm reload-data-manually noshow"
+    type="button"
+    data-url="<?php echo($this->getCurrentPath()); ?>"
+>Zeige weitere Einträge...</button>
+<div class="modificationDate">
+    Stand: <time pubdate="pubdate"><?php echo($this->modificationDate); ?></time>
+</div>

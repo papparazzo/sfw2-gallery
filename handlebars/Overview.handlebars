@@ -1,0 +1,23 @@
+<li id="{{formid}}_recordset_{{id}}" class="media">
+    <a href="{{image}}" rel="lightbox-gallerie" style="border-bottom: none;">
+        <img class="rounded mr-4 mb-5" alt="{{title}}" src="{{preview}}" title="{{title}}" />
+    </a>
+    <div class="media-body mb-5">
+        <h3 id="{{formid}}_title_{{id}}" class="mb-2 mt-1">{{title}}</h3>
+        {{#if deleteAllowed}}
+        <div class="mt-3">
+            <button
+                type="button"
+                class="btn btn-danger btn-sm"
+                data-toggle="modal"
+                data-target="#deleteDialogModal"
+                data-url="{{url}}"
+                data-item-id="{{id}}"
+                data-form-id="{{formid}}"
+            >löschen</button>
+        </div>
+        {{else}}
+        {{description}}
+        {{/if}}
+    </div>
+</li>
