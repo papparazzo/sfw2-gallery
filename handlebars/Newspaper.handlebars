@@ -1,0 +1,27 @@
+<div class="my-5" id="{{formid}}_recordset_{{id}}">
+    <p class="card-text">
+        <a href="{{image}}" rel="lightbox-gallerie">
+            <img class="img-fluid rounded" title="{{title}}" alt="{{title}}" src="{{preview}}" />
+        </a>
+    </p>
+    <small style="font-style: italic;">
+        Erstellt von {{{mailaddr}}} am <time pubdate="pubdate">{{date}}</time>;
+        Quelle: {{source}}
+        {{#if deleteAllowed}}
+        <input type="hidden" id="{{formid}}_title_{{id}}" value="{{title}} vom {{date}}" />
+        <button
+            type="button"
+            class="btn btn-danger btn-sm ml-4"
+            data-toggle="modal"
+            data-target="#deleteDialogModal"
+            data-url="{{url}}"
+            data-item-id="{{id}}"
+            data-form-id="{{formid}}"
+        >löschen</button>
+        {{/if}}
+
+    </small>
+    <div>
+        {{title}}
+    </div>
+</div>
