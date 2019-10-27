@@ -24,6 +24,8 @@ namespace SFW2\Gallery\Controller;
 
 use SFW2\Routing\AbstractController;
 use SFW2\Routing\Result\Content;
+use SFW2\Routing\Resolver\ResolverException;
+
 use SFW2\Controllers\Widget\Obfuscator\EMail;
 use SFW2\Authority\User;
 
@@ -293,7 +295,8 @@ class Gallery extends AbstractController {
 
         $path = $this->getGalleryPath($galleryId);
         if(!is_dir($path . '/thumb/')) {
-            throw new GalleryException("path <$path> is invalid", GalleryException::INVALID_PATH);
+            rmdir($path);
+            return;
         }
 
         $dir = dir($path . '/thumb/');
