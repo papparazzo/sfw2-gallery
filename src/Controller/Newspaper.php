@@ -120,14 +120,14 @@ class Newspaper extends AbstractController {
 
         if($all) {
             $stmt .=
-                "ORDER BY `newspaperarticles`.`Id` DESC " .
+                "ORDER BY `newspaperarticles`.`Id` ASC " .
                 "LIMIT %s, %s ";
             $rows = $this->database->select($stmt, [$this->user->getUserId(), $this->pathId, $start, $count]);
             $cnt = $this->database->selectCount('{TABLE_PREFIX}_newspaperarticles', "WHERE `PathId` = '%s'", [$this->pathId]);
         } else {
             $stmt .=
                 "AND `UserId` = '%s' " .
-                "ORDER BY `newspaperarticles`.`Id` DESC " .
+                "ORDER BY `newspaperarticles`.`Id` ASC " .
                 "LIMIT %s, %s ";
             $rows = $this->database->select($stmt, [$this->user->getUserId(), $this->pathId, $this->user->getUserId(), $start, $count]);
             $cnt = $this->database->selectCount('{TABLE_PREFIX}_newspaperarticles', "WHERE `PathId` = '%s' AND `UserId` = '%s'", [$this->pathId, $this->user->getUserId()]);
