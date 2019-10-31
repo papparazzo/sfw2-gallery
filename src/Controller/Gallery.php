@@ -295,7 +295,9 @@ class Gallery extends AbstractController {
 
         $path = $this->getGalleryPath($galleryId);
         if(!is_dir($path . '/thumb/')) {
-            rmdir($path);
+            if(is_dir($path)) {
+                rmdir($path);
+            }
             return;
         }
 
