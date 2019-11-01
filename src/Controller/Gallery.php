@@ -149,7 +149,7 @@ class Gallery extends AbstractController {
     public function showGallery() : Content {
         $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
         if($id == false) {
-            throw new GalleryException('no gallery fetched!', GalleryException::NO_GALLERY_FETCHED);
+            throw new ResolverException("no gallery fetched!", ResolverException::INVALID_DATA_GIVEN);
         }
         $page = (int)filter_input(INPUT_GET, 'page', FILTER_VALIDATE_INT);
 
@@ -163,7 +163,7 @@ class Gallery extends AbstractController {
         $row = $this->database->selectRow($stmt, [$id]);
 
         if(empty($row)) {
-            throw new GalleryException("no gallery found for id <$id>!", GalleryException::NO_GALLERY_FETCHED);
+            throw new ResolverException("no gallery found for id <$id>!", ResolverException::INVALID_DATA_GIVEN);
         }
 
         $path = $this->getGalleryPath($id);
@@ -239,7 +239,7 @@ class Gallery extends AbstractController {
     public function delete($all = false) : Content {
         $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING);
         if($id == false) {
-            throw new GalleryException('no gallery fetched!', GalleryException::NO_GALLERY_FETCHED);
+            throw new ResolverException("no gallery fetched!", ResolverException::INVALID_DATA_GIVEN);
         }
 
         $tokens = explode('__', $id);
@@ -255,7 +255,7 @@ class Gallery extends AbstractController {
         $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING);
         $p = strpos($id, '__');
         if($p === false) {
-            throw new GalleryException("invalid id <$id> given!", GalleryException::NO_GALLERY_FETCHED);
+            throw new ResolverException("no gallery fetched!", ResolverException::INVALID_DATA_GIVEN);
         }
 
         $file = substr($id, $p + 2);
