@@ -60,8 +60,9 @@
         </label>
         <div class="col-sm-9">
             <textarea
+                id="<?php echo($this->getPathSimplified()); ?>_area"
                 class="form-control form-control-sm"
-                name="description"
+                data-name="description"
                 placeholder="Hier kommt die Beschreibung rein ..."
                 title="Hier kommt der Inhalt hin. Max. 65.535 Buchstaben"
                 cols="30"
