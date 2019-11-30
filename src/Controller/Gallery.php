@@ -50,22 +50,13 @@ class Gallery extends AbstractController {
     use GalleryHelperTrait;
     use EMailHelperTrait;
 
-    /**
-     * @var Database
-     */
-    protected $database;
+    protected Database $database;
 
-    /**
-     * @var Config
-     */
-    protected $config;
+    protected Config $config;
 
-    /**
-     * @var User
-     */
-    protected $user;
+    protected User $user;
 
-    protected $title;
+    protected ?string $title;
 
     const SUMMERIES_PER_PAGE = 3;
     const PREVIEW_FILE = 'preview.png';
@@ -79,7 +70,7 @@ class Gallery extends AbstractController {
         $this->title = $title;
     }
 
-    public function index($all = false) {
+    public function index(bool $all = false) : Content {
         unset($all);
         $content = new Content('SFW2\\Gallery\\Summary');
 
@@ -102,7 +93,7 @@ class Gallery extends AbstractController {
         return $this->database->selectSingle($stmt, [$this->pathId]);
     }
 
-    public function read($all = false) {
+    public function read(bool $all = false) : Content {
         unset($all);
         $count = (int)filter_input(INPUT_GET, 'count', FILTER_VALIDATE_INT);
         $start = (int)filter_input(INPUT_GET, 'offset', FILTER_VALIDATE_INT);
@@ -236,7 +227,7 @@ class Gallery extends AbstractController {
         return $content;
     }
 
-    public function delete($all = false) : Content {
+    public function delete(bool $all = false) : Content {
         $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING);
         if($id == false) {
             throw new ResolverException("no gallery fetched!", ResolverException::INVALID_DATA_GIVEN);

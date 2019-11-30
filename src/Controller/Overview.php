@@ -52,30 +52,11 @@ class Overview extends AbstractController {
     const SUMMERIES_PER_PAGE = 3;
     const DIMENSIONS = 300;
 
-    /**
-     * @var Database
-     */
-    protected $database;
-
-    /**
-     * @var Config
-     */
-    protected $config;
-
-    /**
-     * @var \SFW2\Authority\User
-     */
-    protected $user;
-
-    /**
-     * @var string
-     */
-    protected $title;
-
-    /**
-     * @var string
-     */
-    protected $about;
+    protected Database $database;
+    protected Config $config;
+    protected User $user;
+    protected string $title;
+    protected string $about;
 
     public function __construct(int $pathId, Database $database, Config $config, User $user, string $title = '', string $about = '') {
         parent::__construct($pathId);
@@ -86,7 +67,7 @@ class Overview extends AbstractController {
         $this->about = $about;
     }
 
-    public function index($all = false) {
+    public function index(bool $all = false) : Content {
         unset($all);
         $content = new Content('SFW2\\Gallery\\Overview');
 
@@ -102,7 +83,7 @@ class Overview extends AbstractController {
         return $content;
     }
 
-    public function read($all = false) {
+    public function read(bool $all = false) : Content {
         $count = (int)filter_input(INPUT_GET, 'count', FILTER_VALIDATE_INT);
         $start = (int)filter_input(INPUT_GET, 'offset', FILTER_VALIDATE_INT);
 
@@ -156,7 +137,7 @@ class Overview extends AbstractController {
         return $content;
     }
 
-    public function delete($all = false) {
+    public function delete(bool $all = false) : Content {
         $entryId = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
         if($entryId === false) {
             throw new ResolverException("invalid data given", ResolverException::INVALID_DATA_GIVEN);
