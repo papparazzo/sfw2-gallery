@@ -51,11 +51,8 @@ class Gallery extends AbstractController {
     use EMailHelperTrait;
 
     protected Database $database;
-
     protected Config $config;
-
     protected User $user;
-
     protected ?string $title;
 
     const SUMMERIES_PER_PAGE = 3;
