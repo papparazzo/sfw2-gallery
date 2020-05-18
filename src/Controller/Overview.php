@@ -171,7 +171,7 @@ class Overview extends AbstractController {
         return new Content();
     }
 
-    public function create() {
+    public function create() : Content {
         $content = new Content('Overview');
 
         $validateOnly = filter_input(INPUT_POST, 'validateOnly', FILTER_VALIDATE_BOOLEAN);

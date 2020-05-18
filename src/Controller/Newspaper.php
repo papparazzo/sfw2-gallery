@@ -173,7 +173,7 @@ class Newspaper extends AbstractController {
         return new Content();
     }
 
-    public function create() {
+    public function create() : Content {
         $content = new Content('Newspaper');
 
         $validateOnly = filter_input(INPUT_POST, 'validateOnly', FILTER_VALIDATE_BOOLEAN);
