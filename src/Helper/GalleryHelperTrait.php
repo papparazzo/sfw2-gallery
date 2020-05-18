@@ -80,11 +80,12 @@ trait GalleryHelperTrait {
             throw new GalleryException("could not store file <$filename> in path <$highFolder>", GalleryException::UPDATING_GALLERY_FAILED);
         }
 
-        $this->generateThumb($highFolder . $filename, $thumbFolder . $filename, $previewSize);
+        $this->generateThumb2($highFolder . $filename, $thumbFolder . $filename, $previewSize);
         return $filename;
     }
 
-    protected function generateThumb(string $srcFile, string $destFile, int $desHeight) : void {
+    // FIXME: Dublicate code...
+    protected function generateThumb2(string $srcFile, string $destFile, int $desHeight) : void {
         if(!is_file($srcFile)) {
             throw new GalleryException("src-file <$srcFile> does not exists", GalleryException::INVALID_IMAGE);
         }
