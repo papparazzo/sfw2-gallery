@@ -254,6 +254,42 @@ class Gallery extends AbstractController {
         return new Content();
     }
 
+    public function rotateImage() : Content {
+        $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING);
+        $p = strpos($id, '__');
+        if($p === false) {
+            throw new ResolverException("no gallery fetched!", ResolverException::INVALID_DATA_GIVEN);
+        }
+
+        $file = substr($id, $p + 2);
+        $galleryId = substr($id, 0, $p);
+
+        $path = $this->getGalleryPath($galleryId);
+
+        $this->rotate($path . 'thumb/' . $file);
+        $this->rotate($path . 'high/' . $file);
+        return new Content();
+    }
+
+    protected function rotate(string $file) {
+        list(, , $srcTyp) = getimagesize($file);
+        switch ($srcTyp) {
+            case IMAGETYPE_JPEG:
+                $old = imagecreatefromjpeg($file);
+                break;
+
+            case IMAGETYPE_PNG:
+                $old = imagecreatefrompng($file);
+                break;
+        }
+
+        $new = imagerotate($old, 180, 0);
+
+        imagepng($new, $file);
+        imagedestroy($new);
+        imagedestroy($old);
+    }
+
     protected function getGalleryPath(int $galleryId) : string {
         return 'img' . DIRECTORY_SEPARATOR . $this->pathId . DIRECTORY_SEPARATOR . $galleryId . DIRECTORY_SEPARATOR;
     }
