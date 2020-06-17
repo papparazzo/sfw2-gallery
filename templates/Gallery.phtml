@@ -132,6 +132,13 @@
                 data-item-id="<?php echo($this->id . '__' . $v['ttp']);?>"
                 data-form-id="<?php echo($this->getPathSimplified()); ?>"
             >Vorschau</button>
+            <button
+                type="button"
+                class="btn btn-success btn-sm btnRotateImage"
+                data-url="<?php echo($this->getCurrentPath()); ?>"
+                data-item-id="<?php echo($this->id . '__' . $v['ttp']);?>"
+                data-form-id="<?php echo($this->getPathSimplified()); ?>"
+            >Drehen</button>
         </div>
         <?php endif; ?>
     </div>
