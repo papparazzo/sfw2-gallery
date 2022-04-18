@@ -71,7 +71,7 @@ class Gallery extends AbstractController {
         unset($all);
         $content = new Content('SFW2\\Gallery\\Summary');
 
-        $content->assign('caption',          $this->title ?? 'Gallerieübersicht');
+        $content->assign('caption',          $this->title ?? 'Galerieübersicht');
         $content->assign('title',            $this->title);
         $content->assign('modificationDate', $this->getLastModificatonDate());
         $content->assign('webmaster',        (string)(new EMail($this->config->getVal('project', 'eMailWebMaster'))));
