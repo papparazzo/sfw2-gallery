@@ -139,6 +139,9 @@ class Newspaper extends AbstractController {
         return $content;
     }
 
+    /**
+     * @throws \SFW2\Routing\Resolver\ResolverException
+     */
     public function delete(bool $all = false) : Content {
         $entryId = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
         if($entryId === false) {

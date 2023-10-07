@@ -90,7 +90,12 @@ class Gallery extends AbstractController {
         return $this->database->selectSingle($stmt, [$this->pathId]);
     }
 
-    public function read(bool $all = false) : Content {
+    /**
+     * @param bool $all
+     * @return \SFW2\Routing\Result\Content
+     * @noinspection PhpMissingParentCallCommonInspection
+     */
+    public function read(bool $all = false): Content {
         unset($all);
         $count = (int)filter_input(INPUT_GET, 'count', FILTER_VALIDATE_INT);
         $start = (int)filter_input(INPUT_GET, 'offset', FILTER_VALIDATE_INT);
@@ -134,7 +139,10 @@ class Gallery extends AbstractController {
         return $content;
     }
 
-    public function showGallery() : Content {
+    /**
+     * @throws ResolverException
+     */
+    public function showGallery(): Content {
         $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
         if($id == false) {
             throw new ResolverException("no gallery fetched!", ResolverException::INVALID_DATA_GIVEN);
@@ -177,7 +185,11 @@ class Gallery extends AbstractController {
         return $content;
     }
 
-    public function create() : Content {
+    /**
+     * @return \SFW2\Routing\Result\Content
+     * @noinspection PhpMissingParentCallCommonInspection
+     */
+    public function create(): Content {
         $content = new Content('Gallery');
 
         $rulset = new Ruleset();
@@ -224,7 +236,12 @@ class Gallery extends AbstractController {
         return $content;
     }
 
-    public function delete(bool $all = false) : Content {
+    /**
+     * @throws \SFW2\Gallery\GalleryException
+     * @throws ResolverException
+     * @noinspection PhpMissingParentCallCommonInspection
+     */
+    public function delete(bool $all = false): Content {
         $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING);
         if($id == false) {
             throw new ResolverException("no gallery fetched!", ResolverException::INVALID_DATA_GIVEN);
@@ -239,7 +256,11 @@ class Gallery extends AbstractController {
         return new Content();
     }
 
-    public function changePreview() : Content {
+    /**
+     * @throws \SFW2\Gallery\GalleryException
+     * @throws ResolverException
+     */
+    public function changePreview(): Content {
         $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING);
         $p = strpos($id, '__');
         if($p === false) {
@@ -254,7 +275,11 @@ class Gallery extends AbstractController {
         return new Content();
     }
 
-    public function rotateImage() : Content {
+    /**
+     * @throws ResolverException
+     * @throws \Exception
+     */
+    public function rotateImage(): Content {
         $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING);
         $p = strpos($id, '__');
         if($p === false) {
@@ -271,6 +296,9 @@ class Gallery extends AbstractController {
         return new Content();
     }
 
+    /**
+     * @throws \Exception
+     */
     protected function rotate(string $file) {
         list(, , $srcTyp) = getimagesize($file);
         switch ($srcTyp) {
@@ -306,7 +334,10 @@ class Gallery extends AbstractController {
         return '/' . $preview;
     }
 
-    protected function deletGallery(int $galleryId, bool $all = false) : void {
+    /**
+     * @throws ResolverException
+     */
+    protected function deletGallery(int $galleryId, bool $all = false): void {
         $stmt = "DELETE FROM `{TABLE_PREFIX}_imagegalleries` WHERE `Id` = '%s' AND `PathId` = '%s'";
 
         if(!$all) {
@@ -345,7 +376,10 @@ class Gallery extends AbstractController {
         rmdir($path);
     }
 
-    protected function deleteImage(int $galleryId, string $fileName, bool $all = false) : void {
+    /**
+     * @throws \SFW2\Gallery\GalleryException
+     */
+    protected function deleteImage(int $galleryId, string $fileName, bool $all = false): void {
         $stmt =
             "SELECT `imagegalleries`.`Id` " .
             "FROM `{TABLE_PREFIX}_imagegalleries` AS `imagegalleries` " .
@@ -367,7 +401,10 @@ class Gallery extends AbstractController {
         unlink($path . 'high/' . $fileName);
     }
 
-    public function addImage() : Content {
+    /**
+     * @throws \SFW2\Gallery\GalleryException
+     */
+    public function addImage(): Content {
         $galleryId = filter_input(INPUT_POST, 'gallery', FILTER_SANITIZE_STRING);
 
         $folder = $this->getGalleryPath($galleryId);
@@ -383,7 +420,11 @@ class Gallery extends AbstractController {
         return new Content();
     }
 
-    protected function generatePreview(string $file, int $dimensions, string $src, string $des) : void {
+    /**
+     * @throws \SFW2\Gallery\GalleryException
+     * @throws \Exception
+     */
+    protected function generatePreview(string $file, int $dimensions, string $src, string $des): void {
         $srcFile = $src . '/' . $file;
 
         if(!is_file($srcFile)) {
