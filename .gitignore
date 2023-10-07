@@ -1,5 +1,6 @@
-/src/vendor
+/vendor/
 
 # project files
 /nbproject/
-/.idea
+/.idea/
+/.vscode/
