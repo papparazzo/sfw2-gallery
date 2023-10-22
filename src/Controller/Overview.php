@@ -87,7 +87,7 @@ class Overview extends AbstractController {
         $count = (int)filter_input(INPUT_GET, 'count', FILTER_VALIDATE_INT);
         $start = (int)filter_input(INPUT_GET, 'offset', FILTER_VALIDATE_INT);
 
-        $count = $count ? $count : self::SUMMERIES_PER_PAGE;
+        $count = $count ?: self::SUMMERIES_PER_PAGE;
 
         $stmt =
             "SELECT `overview`.`Id`, `overview`.`Title`, `overview`.`Description`, `overview`.`Date`, " .
