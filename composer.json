@@ -16,6 +16,7 @@
         "php": "^8.1",
 
         "ext-gd": "*",
+        "ext-intl": "*",
 
         "sfw2/core": "^3.0",
         "sfw2/validator": "^5.0"
