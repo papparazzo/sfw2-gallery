@@ -22,129 +22,94 @@
 
 namespace SFW2\Gallery\Controller;
 
+use DateTime;
+use DateTimeZone;
+use Exception;
+use IntlDateFormatter;
+use Psr\Http\Message\ResponseInterface as Response;
+use Psr\Http\Message\ServerRequestInterface as Request;
+use SFW2\Core\HttpExceptions\HttpUnprocessableContent;
+use SFW2\Database\DatabaseInterface;
 use SFW2\Routing\AbstractController;
-use SFW2\Routing\Result\Content;
-use SFW2\Routing\Resolver\ResolverException;
 
-use SFW2\Controllers\Widget\Obfuscator\EMail;
-use SFW2\Authority\User;
-
-use SFW2\Core\Database;
-use SFW2\Core\Config;
-
+use SFW2\Routing\ResponseEngine;
 use SFW2\Validator\Ruleset;
 use SFW2\Validator\Validator;
 use SFW2\Validator\Validators\IsNotEmpty;
-
-use SFW2\Controllers\Controller\Helper\DateTimeHelperTrait;
-use SFW2\Controllers\Controller\Helper\ImageHelperTrait;
-use SFW2\Controllers\Controller\Helper\EMailHelperTrait;
 
 use SFW2\Gallery\Helper\GalleryHelperTrait;
 use SFW2\Gallery\GalleryException;
 
 class Gallery extends AbstractController {
 
-    use DateTimeHelperTrait;
-    use ImageHelperTrait;
     use GalleryHelperTrait;
-    use EMailHelperTrait;
 
-    protected Database $database;
-    protected Config $config;
-    protected User $user;
     protected ?string $title;
 
     const SUMMERIES_PER_PAGE = 3;
     const PREVIEW_FILE = 'preview.png';
+    const PREVIEW_FILE_BIG = 'previewb.png';
     const DIMENSIONS = 130;
+    const DIMENSIONS_BIG = 270;
 
-    public function __construct(int $pathId, Database $database, Config $config, User $user, string $title = null) {
-        parent::__construct($pathId);
+    public function __construct(
+        protected DatabaseInterface $database
+        /*
+        Config $config, User $user, string $title = null*/) {
+       /*
         $this->database = $database;
         $this->user = $user;
         $this->config = $config;
         $this->title = $title;
+       */
     }
 
-    public function index(bool $all = false) : Content {
-        unset($all);
-        $content = new Content('SFW2\\Gallery\\Summary');
-
-        $content->assign('caption',          $this->title ?? 'Galerieübersicht');
-        $content->assign('title',            $this->title);
-        $content->assign('modificationDate', $this->getLastModificatonDate());
-        $content->assign('webmaster',        (string)(new EMail($this->config->getVal('project', 'eMailWebMaster'))));
-
-        $content->appendJSFile('Gallery.handlebars.js');
-        return $content;
-    }
-
-    protected function getLastModificatonDate() {
-        $stmt =
-            "SELECT `imagegalleries`.`CreationDate` " .
-            "FROM `{TABLE_PREFIX}_imagegalleries` AS `imagegalleries` " .
-            "WHERE `imagegalleries`.`PathId` = '%s' " .
-            "ORDER BY `imagegalleries`.`CreationDate`";
-
-        return $this->database->selectSingle($stmt, [$this->pathId]);
-    }
-
-    /**
-     * @param bool $all
-     * @return \SFW2\Routing\Result\Content
-     * @noinspection PhpMissingParentCallCommonInspection
-     */
-    public function read(bool $all = false): Content {
-        unset($all);
-        $count = (int)filter_input(INPUT_GET, 'count', FILTER_VALIDATE_INT);
-        $start = (int)filter_input(INPUT_GET, 'offset', FILTER_VALIDATE_INT);
-
-        $count = $count ? $count : self::SUMMERIES_PER_PAGE;
+    public function index(Request $request, ResponseEngine $responseEngine): Response {
+        $pathId = (int)$request->getAttribute('sfw2_routing')['path_id'];
 
         $stmt =
-            "SELECT `imagegalleries`.`Id`, `imagegalleries`.`Title`, `imagegalleries`.`Description`, `imagegalleries`.`CreationDate`, " .
-            "`user`.`Email`, CONCAT(`user`.`FirstName`, ' ', `user`.`LastName`) AS `Creator`, " .
-            "IF(`imagegalleries`.`UserId` = '%s', '1', '0') AS `OwnEntry` " .
+            "SELECT `Id`, `Title`, `Description`, `CreationDate` " .
             "FROM `{TABLE_PREFIX}_imagegalleries` AS `imagegalleries` " .
-            "LEFT JOIN `{TABLE_PREFIX}_user` AS `user` " .
-            "ON `user`.`Id` = `imagegalleries`.`UserId` " .
-            "WHERE `imagegalleries`.`PathId` = '%s' " .
-            "ORDER BY `imagegalleries`.`Id` DESC " .
-            "LIMIT %s, %s " ;
+            "WHERE `PathId` = %s " .
+            "ORDER BY `Id` DESC ";
 
-        $rows = $this->database->select($stmt, [$this->user->getUserId(), $this->pathId, $start, $count]);
-        $cnt = $this->database->selectCount('{TABLE_PREFIX}_imagegalleries', "WHERE `PathId` = '%s'", [$this->pathId]);
-
-        $content = new Content('Gallery');
+        $rows = $this->database->select($stmt, [$pathId]);
         $entries = [];
 
         foreach($rows as $row) {
-            $cd = $this->getDate($row['CreationDate']);
+           # $cd = $this->getShortDate($row['CreationDate']);
             $entry = [];
             $entry['id'               ] = $row['Id'];
-            $entry['date'             ] = $cd;
+           # $entry['date'             ] = $cd;
             $entry['title'            ] = $row['Title'];
             $entry['link'             ] = '?do=showGallery&id=' . $row['Id'];
             $entry['description'      ] = $row['Description'];
-            $entry['ownEntry'         ] = (bool)$row['OwnEntry'];
-            $entry['previewImage'     ] = $this->getPreviewImage($row['Id']);
-            $entry['creator'          ] = (string)$this->getEMail($row["Email"], $row['Creator'], 'Galerie ' . $row['Title'] . ' (' . $cd . ")");
+            #$entry['ownEntry'         ] = (bool)$row['OwnEntry'];
+            $entry['previewImage'     ] = $this->getPreviewImage($pathId, $row['Id'], self::PREVIEW_FILE_BIG);
+            #$entry['creator'          ] = (string)$this->getEMail($row["Email"], $row['Creator'], 'Galerie ' . $row['Title'] . ' (' . $cd . ")");
             $entries[] = $entry;
         }
 
-        $content->assign('offset', $start + $count);
-        $content->assign('hasNext', $start + $count < $cnt);
-        $content->assign('entries', $entries);
-        return $content;
+        $content = [
+            'caption' => 'Bildergalerie',
+            'webmaster' => $request->getAttribute('sfw2_project')['webmaster_mail_address'],
+            'entries' => $entries
+        ];
+
+        return $responseEngine->render(
+            $request,
+            "SFW2\\Gallery\\Summary",
+            $content
+        );
     }
 
     /**
-     * @throws ResolverException
+     * @throws throw new HttpUnprocessableContent();
      */
     public function showGallery(): Content {
         $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
-        if($id == false) {
+        if(!$id) {
+            throw new HttpUnprocessableContent();
             throw new ResolverException("no gallery fetched!", ResolverException::INVALID_DATA_GIVEN);
         }
         $page = (int)filter_input(INPUT_GET, 'page', FILTER_VALIDATE_INT);
@@ -175,7 +140,7 @@ class Gallery extends AbstractController {
         $content->assign('mailaddr',          (string)$this->getEMail($row["Email"], $row['Creator'], 'Galerie ' . $row['Title'] . ' (' . $cd . ")"));
         $content->assign('creationDate',      $cd);
         $content->assign('description',       $row['Description']);
-        $content->assign('page',              (int)$page);
+        $content->assign('page',              $page);
         $content->assign('pics',              $pics);
         $content->assign('editable',          true);
         $content->assign('previewImage',      $this->getPreviewImage($id));
@@ -188,7 +153,7 @@ class Gallery extends AbstractController {
     /**
      * @return \SFW2\Routing\Result\Content
      * @noinspection PhpMissingParentCallCommonInspection
-     */
+     * /
     public function create(): Content {
         $content = new Content('Gallery');
 
@@ -240,10 +205,10 @@ class Gallery extends AbstractController {
      * @throws \SFW2\Gallery\GalleryException
      * @throws ResolverException
      * @noinspection PhpMissingParentCallCommonInspection
-     */
+     * /
     public function delete(bool $all = false): Content {
         $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING);
-        if($id == false) {
+        if(!$id) {
             throw new ResolverException("no gallery fetched!", ResolverException::INVALID_DATA_GIVEN);
         }
 
@@ -271,7 +236,8 @@ class Gallery extends AbstractController {
         $galleryId = substr($id, 0, $p);
 
         $path = $this->getGalleryPath($galleryId);
-        $this->generatePreview($file, self::DIMENSIONS, $path . '/high/', $path);
+        $this->generatePreview($file, self::DIMENSIONS, $path . '/high/', $path . '/' . self::PREVIEW_FILE);
+        $this->generatePreview($file, self::DIMENSIONS_BIG, $path . '/high/', $path . '/' . self::PREVIEW_FILE_BIG);
         return new Content();
     }
 
@@ -300,7 +266,7 @@ class Gallery extends AbstractController {
      * @throws \Exception
      */
     protected function rotate(string $file) {
-        list(, , $srcTyp) = getimagesize($file);
+        [, , $srcTyp] = getimagesize($file);
         switch ($srcTyp) {
             case IMAGETYPE_JPEG:
                 $old = imagecreatefromjpeg($file);
@@ -309,6 +275,9 @@ class Gallery extends AbstractController {
             case IMAGETYPE_PNG:
                 $old = imagecreatefrompng($file);
                 break;
+
+            default:
+                throw new Exception("Invalid Image type <$srcTyp> given");
         }
 
         $new = imagerotate($old, 180, 0);
@@ -318,18 +287,18 @@ class Gallery extends AbstractController {
         imagedestroy($old);
     }
 
-    protected function getGalleryPath(int $galleryId) : string {
-        return 'img' . DIRECTORY_SEPARATOR . $this->pathId . DIRECTORY_SEPARATOR . $galleryId . DIRECTORY_SEPARATOR;
+    protected function getGalleryPath(int $pathId, int $galleryId): string {
+        return 'img' . DIRECTORY_SEPARATOR . $pathId . DIRECTORY_SEPARATOR . $galleryId . DIRECTORY_SEPARATOR;
     }
 
-    protected function getPreviewImage(int $id = 0) : string {
+    protected function getPreviewImage(int $pathId, int $id = 0, string $previewFile = self::PREVIEW_FILE): string {
         if($id == 0) {
             return "/img/layout/empty.png";
         }
-        $preview = $this->getGalleryPath($id) . self::PREVIEW_FILE;
+        $preview = $this->getGalleryPath($pathId, $id) . $previewFile;
 
         if(!is_file($preview)) {
-            return "/img/layout/empty.png";
+         #   return "/img/layout/empty.png";
         }
         return '/' . $preview;
     }
@@ -369,6 +338,7 @@ class Gallery extends AbstractController {
         $dir->close();
         if(is_file($path . '/' . self::PREVIEW_FILE)) {
             unlink($path . '/' . self::PREVIEW_FILE);
+            unlink($path . '/' . self::PREVIEW_FILE_BIG);
         }
 
         rmdir($path . '/thumb/');
@@ -381,8 +351,7 @@ class Gallery extends AbstractController {
      */
     protected function deleteImage(int $galleryId, string $fileName, bool $all = false): void {
         $stmt =
-            "SELECT `imagegalleries`.`Id` " .
-            "FROM `{TABLE_PREFIX}_imagegalleries` AS `imagegalleries` " .
+            "SELECT `imagegalleries`.`Id` FROM `{TABLE_PREFIX}_imagegalleries` AS `imagegalleries` " .
             "WHERE `imagegalleries`.`Id` = '%s' AND `imagegalleries`.`PathId` = '%s' ";
 
         if(!$all) {
@@ -414,7 +383,8 @@ class Gallery extends AbstractController {
         $highFolder = $folder . DIRECTORY_SEPARATOR . 'high' . DIRECTORY_SEPARATOR;
 
         if(!is_file($folder . self::PREVIEW_FILE)) {
-            $this->generatePreview($filename, self::DIMENSIONS, $highFolder, $folder);
+            $this->generatePreview($filename, self::DIMENSIONS, $highFolder, $folder . '/' . self::PREVIEW_FILE);
+            $this->generatePreview($filename, self::DIMENSIONS_BIG, $highFolder, $folder . '/' . self::PREVIEW_FILE_BIG);
         }
 
         return new Content();
@@ -431,7 +401,7 @@ class Gallery extends AbstractController {
             throw new GalleryException("file <$srcFile> is not a valid image!", GalleryException::INVALID_IMAGE);
         }
 
-        list($oldW, $oldH, $srcTyp) = getimagesize($srcFile);
+        [$oldW, $oldH, $srcTyp] = getimagesize($srcFile);
 
 
         if($oldH > $oldW) {
@@ -454,15 +424,18 @@ class Gallery extends AbstractController {
             case IMAGETYPE_PNG:
                 $old = imagecreatefrompng($srcFile);
                 break;
+
+            default:
+                throw new Exception("Invalid Image type <$srcTyp> given");
         }
 
         imagecopyresampled($new, $old, 0, 0, ($newW - $dimensions) / 2, ($newH - $dimensions) / 2, $dimensions, $dimensions, $limD, $limD);
-        imagepng($new, $des . '/' . self::PREVIEW_FILE);
+        imagepng($new, $des);
         imagedestroy($new);
         imagedestroy($old);
     }
 
-    protected function getImageList(string $path) : array{
+    protected function getImageList(string $path): array{
         $dir = dir($path . '/thumb/');
         $pics = [];
 
@@ -485,4 +458,38 @@ class Gallery extends AbstractController {
         rsort($pics);
         return $pics;
     }
+
+    protected function getLastModificatonDate() {
+        $stmt =
+            "SELECT `imagegalleries`.`CreationDate` FROM `{TABLE_PREFIX}_imagegalleries` AS `imagegalleries` " .
+            "WHERE `imagegalleries`.`PathId` = '%s' " .
+            "ORDER BY `imagegalleries`.`CreationDate`";
+
+        return $this->database->selectSingle($stmt, [$this->pathId]);
+    }
+
+
+        // TODO: Make this a trait
+    /**
+     * @throws Exception
+     * @deprecated
+     */
+    protected function getShortDate($date = 'now', string $dateTimeZone = 'Europe/Berlin'): bool|string
+    {
+        if($date === null) {
+            return '';
+        }
+
+         $local_date = IntlDateFormatter::create(
+                'de',
+                IntlDateFormatter::LONG,
+                IntlDateFormatter::NONE,
+                $dateTimeZone,
+                null,
+                null
+            );
+
+        return $local_date->format(new DateTime($date, new DateTimeZone($dateTimeZone)));
+    }
+
 }
