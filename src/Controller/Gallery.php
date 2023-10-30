@@ -104,50 +104,51 @@ class Gallery extends AbstractController {
     }
 
     /**
-     * @throws throw new HttpUnprocessableContent();
+     * @throws HttpUnprocessableContent
      */
-    public function showGallery(): Content {
+    public function showGallery(Request $request, ResponseEngine $responseEngine): Response {
         $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
         if(!$id) {
-            throw new HttpUnprocessableContent();
-            throw new ResolverException("no gallery fetched!", ResolverException::INVALID_DATA_GIVEN);
+            throw new HttpUnprocessableContent("no gallery fetched!");
         }
         $page = (int)filter_input(INPUT_GET, 'page', FILTER_VALIDATE_INT);
 
         $stmt =
-            "SELECT `imagegalleries`.`Title`, `imagegalleries`.`CreationDate`, `imagegalleries`.`Description`,  " .
-            "`user`.`Email`,  CONCAT(`user`.`FirstName`, ' ', `user`.`LastName`) AS `Creator` " .
+            "SELECT `Title`, `CreationDate`, `Description` " .
             "FROM `{TABLE_PREFIX}_imagegalleries` AS `imagegalleries` " .
-            "LEFT JOIN `{TABLE_PREFIX}_user` AS `user` ON `user`.`Id` = `imagegalleries`.`UserId` " .
-            "WHERE `imagegalleries`.`Id` = '%s' ";
+            "WHERE `imagegalleries`.`Id` = %s ";
 
         $row = $this->database->selectRow($stmt, [$id]);
 
         if(empty($row)) {
-            throw new ResolverException("no gallery found for id <$id>!", ResolverException::INVALID_DATA_GIVEN);
+            throw new HttpUnprocessableContent("no gallery found for id <$id>!");
         }
-
-        $path = $this->getGalleryPath($id);
+        $pathId = (int)$request->getAttribute('sfw2_routing')['path_id'];
+        $path = $this->getGalleryPath($pathId, $id);
         $pics = [];
         if(is_dir($path . '/thumb/')) {
             $pics = $this->getImageList($path);
         }
 
-        $cd = $this->getDate($row['CreationDate']);
-        $content = new Content('SFW2\\Gallery\\Gallery');
-        $content->assign('caption',           $row['Title']);
-        $content->assign('id',                (int)$id);
-        $content->assign('mailaddr',          (string)$this->getEMail($row["Email"], $row['Creator'], 'Galerie ' . $row['Title'] . ' (' . $cd . ")"));
-        $content->assign('creationDate',      $cd);
-        $content->assign('description',       $row['Description']);
-        $content->assign('page',              $page);
-        $content->assign('pics',              $pics);
-        $content->assign('editable',          true);
-        $content->assign('previewImage',      $this->getPreviewImage($id));
-        $content->assign('maxFileUploads',    ini_get('max_file_uploads'));
-        $content->appendCSSFile('lightbox.min.css');
-        $content->appendJSFile('lightbox.min.js');
-        return $content;
+        $cd = $this->getShortDate($row['CreationDate']);
+        $content = [
+            'title'          => $row['Title'],
+            'id'             => (int)$id,
+        #'mailaddr' =>          (string)$this->getEMail($row["Email"], $row['Creator'], 'Galerie ' . $row['Title'] . ' (' . $cd . ")"));
+            'creationDate'   => $cd,
+            'description'    => $row['Description'],
+            'page'           => $page,
+            'pics'           => $pics,
+            'editable'       => true,
+            'previewImage'   => $this->getPreviewImage($id),
+            'maxFileUploads' => ini_get('max_file_uploads')
+        ];
+
+        return $responseEngine->render(
+            $request,
+            "SFW2\\Gallery\\Gallery",
+            $content
+        );
     }
 
     /**
