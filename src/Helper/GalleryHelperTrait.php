@@ -26,6 +26,9 @@ use SFW2\Gallery\GalleryException;
 
 trait GalleryHelperTrait {
 
+    /**
+     * @throws GalleryException
+     */
     protected function addFile(string $folder, int $previewSize) {
         if(!isset($_POST['file'])) {
             throw new GalleryException("file not set", GalleryException::UPDATING_GALLERY_FAILED);
@@ -47,21 +50,11 @@ trait GalleryHelperTrait {
         $type = $type[1];
         $data = explode(',', $chunk[1]);
 
-        switch($type) {
-            case 'image/pjpeg':
-            case 'image/jpeg':
-            case 'image/jpg':
-                $type = 'jpg';
-                break;
-
-            case 'image/png':
-            case 'image/x-png':
-                $type = 'png';
-                break;
-
-            default:
-                throw new GalleryException("invalid image type <$type> given!", GalleryException::INVALID_IMAGE);
-        }
+        $type = match ($type) {
+            'image/pjpeg', 'image/jpeg', 'image/jpg' => 'jpg',
+            'image/png', 'image/x-png' => 'png',
+            default => throw new GalleryException("invalid image type <$type> given!", GalleryException::INVALID_IMAGE),
+        };
 
         $cnt = count(glob($highFolder . '*'));
 
@@ -85,6 +78,10 @@ trait GalleryHelperTrait {
     }
 
     // FIXME: Dublicate code...
+
+    /**
+     * @throws GalleryException
+     */
     protected function generateThumb2(string $srcFile, string $destFile, int $desHeight) : void {
         if(!is_file($srcFile)) {
             throw new GalleryException("src-file <$srcFile> does not exists", GalleryException::INVALID_IMAGE);
@@ -112,15 +109,17 @@ trait GalleryHelperTrait {
         imagedestroy($new);
     }
 
-    protected function getImageFile(string $name, bool $preview) : string {
+    protected function getImageFile(string $name, int $pathId, bool $preview): string
+    {
         if($preview) {
-            return DIRECTORY_SEPARATOR . $this->getGalleryPath() . 'thumb' . DIRECTORY_SEPARATOR . $name;
+            return DIRECTORY_SEPARATOR . $this->getGalleryPath($pathId) . 'thumb' . DIRECTORY_SEPARATOR . $name;
         }
-        return DIRECTORY_SEPARATOR . $this->getGalleryPath() . 'high' . DIRECTORY_SEPARATOR . $name;
+        return DIRECTORY_SEPARATOR . $this->getGalleryPath($pathId) . 'high' . DIRECTORY_SEPARATOR . $name;
     }
 
-    protected function getGalleryPath() {
-        return 'img' . DIRECTORY_SEPARATOR . $this->pathId . DIRECTORY_SEPARATOR;
+    protected function getGalleryPath(int $pathId): string
+    {
+        return 'img' . DIRECTORY_SEPARATOR . $pathId . DIRECTORY_SEPARATOR;
     }
 
 }
