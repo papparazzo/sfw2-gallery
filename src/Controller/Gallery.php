@@ -65,7 +65,7 @@ class Gallery extends AbstractController {
     }
 
     public function index(Request $request, ResponseEngine $responseEngine): Response {
-        $pathId = (int)$request->getAttribute('sfw2_routing')['path_id'];
+        $pathId = $this->getPathId($request);
 
         $stmt =
             "SELECT `Id`, `Title`, `Description`, `CreationDate` " .
@@ -189,14 +189,14 @@ class Gallery extends AbstractController {
 
         $cd = $this->getShortDate();
         $content = new Content('Gallery');
-        $content->assign('id',           ['value' => $id]);
-        $content->assign('date',         ['value' => $cd]);
-        $content->assign('title',        ['value' => $values['caption']['value']]);
-        $content->assign('description',  ['value' => $values['description']['value']]);
-        $content->assign('link',         ['value' => '?do=showGallery&id=' . $id]);
+        $content['id'] =           ['value' => $id];
+        $content['date'] =         ['value' => $cd];
+        $content['title'] =        ['value' => $values['caption']['value']];
+        $content['description'] =  ['value' => $values['description']['value']];
+        $content['link'] =         ['value' => '?do=showGallery&id=' . $id];
         $content->assign('ownEntry',     ['value' => true]);
         $content->assign('previewImage', ['value' => $this->getPreviewImage()]);
-        $content->assign('creator',  ['value' => $this->getEMailByUser($this->user, 'Galerie ' . $values['caption']['value'] . ' (' . $cd . ")")]);
+        $content['creator'] =  ['value' => $this->getEMailByUser($this->user, 'Galerie ' . $values['caption']['value'] . ' (' . $cd . ")")];
 
         $content->dataWereModified();
         return $content;
