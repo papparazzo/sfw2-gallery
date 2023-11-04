@@ -22,16 +22,16 @@
 
 namespace SFW2\Gallery\Controller;
 
+use DateTime;
+use DateTimeZone;
+use Exception;
+use IntlDateFormatter;
+use Psr\Http\Message\ResponseInterface as Response;
+use Psr\Http\Message\ServerRequestInterface as Request;
+use SFW2\Database\DatabaseInterface;
 use SFW2\Routing\AbstractController;
-use SFW2\Controllers\Widget\Obfuscator\EMail;
-use SFW2\Authority\User;
-use SFW2\Routing\Result\Content;
 
-use SFW2\Routing\Resolver\ResolverException;
-
-use SFW2\Core\Database;
-use SFW2\Core\Config;
-
+use SFW2\Routing\ResponseEngine;
 use SFW2\Validator\Ruleset;
 use SFW2\Validator\Validator;
 use SFW2\Validator\Validators\IsNotEmpty;
@@ -39,82 +39,33 @@ use SFW2\Validator\Validators\IsDate;
 
 use SFW2\Gallery\Helper\GalleryHelperTrait;
 
-use SFW2\Controllers\Controller\Helper\DateTimeHelperTrait;
-use SFW2\Controllers\Controller\Helper\ImageHelperTrait;
-use SFW2\Controllers\Controller\Helper\EMailHelperTrait;
-
 class Newspaper extends AbstractController {
 
-    use DateTimeHelperTrait;
-    use ImageHelperTrait;
-    use EMailHelperTrait;
     use GalleryHelperTrait;
 
     const SUMMERIES_PER_PAGE = 3;
     const DIMENSIONS = 600;
 
-    protected Database $database;
     protected Config $config;
     protected User $user;
     protected string $title;
     protected string $about;
 
-    public function __construct(int $pathId, Database $database, Config $config, User $user, string $title = '', string $about = '') {
-        parent::__construct($pathId);
-        $this->database = $database;
-        $this->config = $config;
-        $this->user = $user;
-        $this->title = $title;
-        $this->about = $about;
+    public function __construct(
+        protected DatabaseInterface $database
+    ) {
     }
 
-    public function index(bool $all = false) : Content {
-        unset($all);
-        $content = new Content('SFW2\\Gallery\\Newspaper');
-
-        $content->assign('title', $this->title);
-        $content->assign('about', $this->about);
-        $content->assign('modificationDate', $this->getLastModificatonDate());
-        $content->assign('webmaster', (string)(new EMail($this->config->getVal('project', 'eMailWebMaster'))));
-
-        $content->appendJSFile('Newspaper.handlebars.js');
-        $content->appendCSSFile('lightbox.min.css');
-        $content->appendJSFile('lightbox.min.js');
-
-        return $content;
-    }
-
-    public function read(bool $all = false) : Content {
-        $count = (int)filter_input(INPUT_GET, 'count', FILTER_VALIDATE_INT);
-        $start = (int)filter_input(INPUT_GET, 'offset', FILTER_VALIDATE_INT);
-
-        $count = $count ? $count : self::SUMMERIES_PER_PAGE;
+    public function index(Request $request, ResponseEngine $responseEngine): Response {
+        $pathId = (int)$request->getAttribute('sfw2_routing')['path_id'];
 
         $stmt =
-            "SELECT `newspaperarticles`.`Id`, `newspaperarticles`.`Title`, `newspaperarticles`.`Date`, " .
-                "`newspaperarticles`.`Source`, `newspaperarticles`.`FileName`, " .
-            "`user`.`Email`, IF(`newspaperarticles`.`UserId` = '%s', '1', '0') AS `OwnEntry`, `user`.`FirstName`, `user`.`LastName` " .
-            "FROM `{TABLE_PREFIX}_newspaperarticles` AS `newspaperarticles` " .
-            "LEFT JOIN `{TABLE_PREFIX}_user` AS `user` " .
-            "ON `user`.`Id` = `newspaperarticles`.`UserId` " .
-            "WHERE `newspaperarticles`.`PathId` = '%s' ";
+            "SELECT `Id`, `Title`, `Date`, `Source`, `FileName` " .
+            "FROM `{TABLE_PREFIX}_newspaperarticles` AS `article` " .
+            "WHERE `article`.`PathId` = %s " .
+            "ORDER BY `article`.`Date` DESC";
+        $rows = $this->database->select($stmt, [$pathId]);
 
-        if($all) {
-            $stmt .=
-                "ORDER BY `newspaperarticles`.`Date` DESC " .
-                "LIMIT %s, %s ";
-            $rows = $this->database->select($stmt, [$this->user->getUserId(), $this->pathId, $start, $count]);
-            $cnt = $this->database->selectCount('{TABLE_PREFIX}_newspaperarticles', "WHERE `PathId` = '%s'", [$this->pathId]);
-        } else {
-            $stmt .=
-                "AND `UserId` = '%s' " .
-                "ORDER BY `newspaperarticles`.`Date` DESC " .
-                "LIMIT %s, %s ";
-            $rows = $this->database->select($stmt, [$this->user->getUserId(), $this->pathId, $this->user->getUserId(), $start, $count]);
-            $cnt = $this->database->selectCount('{TABLE_PREFIX}_newspaperarticles', "WHERE `PathId` = '%s' AND `UserId` = '%s'", [$this->pathId, $this->user->getUserId()]);
-        }
-
-        $content = new Content('Newspaper');
         $entries = [];
 
         foreach($rows as $row) {
@@ -123,25 +74,42 @@ class Newspaper extends AbstractController {
             $entry['id'         ] = $row['Id'];
             $entry['date'       ] = $cd;
             $entry['title'      ] = $row['Title'];
-            $entry['image'      ] = $this->getImageFile($row['FileName'], false);
-            $entry['preview'    ] = $this->getImageFile($row['FileName'], true);
+            $entry['image'      ] = $this->getImageFile($row['FileName'], $pathId, false);
+            $entry['preview'    ] = $this->getImageFile($row['FileName'], $pathId, true);
 
             $entry['source'     ] = $row['Source'];
-            $entry['mailaddr'   ] = $this->getEMail($row["Email"], $row['FirstName'] . ' ' . $row['LastName'], "Zeitungsartikel vom " . $cd);
-            $entry['ownEntry'   ] = (bool)$row['OwnEntry'];
 
             $entries[] = $entry;
         }
 
-        $content->assign('offset', $start + $count);
-        $content->assign('hasNext', $start + $count < $cnt);
-        $content->assign('entries', $entries);
-        return $content;
+        $content = [
+            'title' => 'Pressemitteilungen', // FIXME: outsource this!
+            'about' => 'Hier ein paar lesenswerte Zeitungsartikel über die Springer Singgemeinschaft',
+            'items' => $entries
+        ];
+
+        /*
+        $content->assign('webmaster', (string)(new EMail($this->config->getVal('project', 'eMailWebMaster'))));
+
+        $content->appendJSFile('Newspaper.handlebars.js');
+        $content->appendCSSFile('lightbox.min.css');
+        $content->appendJSFile('lightbox.min.js');
+        */
+
+        return $responseEngine->render(
+            $request,
+            "SFW2\\Gallery\\Newspaper",
+            $content
+        );
+    }
+
+    /*
+    public function read(bool $all = false) : Content {
     }
 
     /**
      * @throws \SFW2\Routing\Resolver\ResolverException
-     */
+     * /
     public function delete(bool $all = false) : Content {
         $entryId = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
         if($entryId === false) {
@@ -227,11 +195,33 @@ class Newspaper extends AbstractController {
 
     protected function getLastModificatonDate() : string {
         $stmt =
-            "SELECT `newspaperarticles`.`Date` " .
-            "FROM `{TABLE_PREFIX}_newspaperarticles` AS `newspaperarticles` " .
+            "SELECT `newspaperarticles`.`Date` FROM `{TABLE_PREFIX}_newspaperarticles` AS `newspaperarticles` " .
             "WHERE `newspaperarticles`.`PathId` = '%s' " .
             "ORDER BY `newspaperarticles`.`Date`";
 
         return (string)$this->database->selectSingle($stmt, [$this->pathId]);
+    }*/
+
+    // TODO: Make this a trait
+    /**
+     * @throws Exception
+     * @deprecated
+     */
+    protected function getShortDate($date = 'now', string $dateTimeZone = 'Europe/Berlin'): bool|string
+    {
+        if($date === null) {
+            return '';
+        }
+
+         $local_date = IntlDateFormatter::create(
+                'de',
+                IntlDateFormatter::LONG,
+                IntlDateFormatter::NONE,
+                $dateTimeZone,
+                null,
+                null
+            );
+
+        return $local_date->format(new DateTime($date, new DateTimeZone($dateTimeZone)));
     }
 }
