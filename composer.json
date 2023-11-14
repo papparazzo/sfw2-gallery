@@ -8,6 +8,13 @@
             "type": "vcs",
             "url": "https://github.com/papparazzo/sfw2-validator.git"
         }, {
+            "type": "path",
+            "url": "../sfw2-routing",
+            "symlink": true
+        }, {
+            "type": "vcs",
+            "url": "https://github.com/papparazzo/sfw2-database.git"
+        }, {
             "type": "vcs",
             "url": "https://github.com/papparazzo/sfw2-core.git"
         }
@@ -19,7 +26,9 @@
         "ext-intl": "*",
 
         "sfw2/core": "^3.0",
-        "sfw2/validator": "^5.0"
+        "sfw2/database": "^2.0",
+        "sfw2/validator": "^6.0",
+        "sfw2/routing": "@dev"
     },
     "autoload": {
         "psr-4": {
