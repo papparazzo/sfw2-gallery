@@ -25,6 +25,7 @@ namespace SFW2\Gallery\Controller;
 use DateTime;
 use DateTimeZone;
 use Exception;
+use Fig\Http\Message\StatusCodeInterface;
 use IntlDateFormatter;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -32,6 +33,7 @@ use SFW2\Core\HttpExceptions\HttpUnprocessableContent;
 use SFW2\Database\DatabaseInterface;
 use SFW2\Routing\AbstractController;
 
+use SFW2\Routing\HelperTraits\getPathIdTrait;
 use SFW2\Routing\ResponseEngine;
 use SFW2\Validator\Ruleset;
 use SFW2\Validator\Validator;
@@ -41,6 +43,8 @@ use SFW2\Gallery\Helper\GalleryHelperTrait;
 use SFW2\Gallery\GalleryException;
 
 class Gallery extends AbstractController {
+
+    use getPathIdTrait;
 
     use GalleryHelperTrait;
 
@@ -64,7 +68,8 @@ class Gallery extends AbstractController {
        */
     }
 
-    public function index(Request $request, ResponseEngine $responseEngine): Response {
+    public function index(Request $request, ResponseEngine $responseEngine): Response
+    {
         $pathId = $this->getPathId($request);
 
         $stmt =
@@ -98,15 +103,16 @@ class Gallery extends AbstractController {
 
         return $responseEngine->render(
             $request,
+            $content,
             "SFW2\\Gallery\\Summary",
-            $content
         );
     }
 
     /**
      * @throws HttpUnprocessableContent
      */
-    public function showGallery(Request $request, ResponseEngine $responseEngine): Response {
+    public function showGallery(Request $request, ResponseEngine $responseEngine): Response
+    {
         $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
         if(!$id) {
             throw new HttpUnprocessableContent("no gallery fetched!");
@@ -146,18 +152,17 @@ class Gallery extends AbstractController {
 
         return $responseEngine->render(
             $request,
-            "SFW2\\Gallery\\Gallery",
-            $content
+            $content,
+            "SFW2\\Gallery\\Gallery"
         );
     }
 
     /**
      * @return \SFW2\Routing\Result\Content
      * @noinspection PhpMissingParentCallCommonInspection
-     * /
-    public function create(): Content {
-        $content = new Content('Gallery');
-
+     */
+    public function create(Request $request, ResponseEngine $responseEngine): Response
+    {
         $rulset = new Ruleset();
         $rulset->addNewRules('caption', new IsNotEmpty());
         $rulset->addNewRules('description', new IsNotEmpty());
@@ -166,11 +171,12 @@ class Gallery extends AbstractController {
         $values = [];
 
         $error = $validator->validate($_POST, $values);
-        $content->assignArray($values);
 
         if(!$error) {
-            $content->setError(true);
-            return $content;
+            return
+                $responseEngine->
+                render($request, ['sfw2_payload' => $values])->
+                withStatus(StatusCodeInterface::STATUS_UNPROCESSABLE_ENTITY);
         }
 
         $stmt =
@@ -180,12 +186,16 @@ class Gallery extends AbstractController {
         $id = $this->database->insert(
             $stmt,
             [
-                $this->pathId,
-                $this->user->getUserId(),
+                $this->getPathId($request),
+                1,//$this->user->getUserId(), // FIXME
                 $values['caption']['value'],
                 $values['description']['value'],
             ]
         );
+
+
+      /*
+
 
         $cd = $this->getShortDate();
         $content = new Content('Gallery');
@@ -200,6 +210,7 @@ class Gallery extends AbstractController {
 
         $content->dataWereModified();
         return $content;
+      */
     }
 
     /**
@@ -207,7 +218,7 @@ class Gallery extends AbstractController {
      * @throws ResolverException
      * @noinspection PhpMissingParentCallCommonInspection
      * /
-    public function delete(bool $all = false): Content {
+    public function delete(Request $request, ResponseEngine $responseEngine): Response {
         $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING);
         if(!$id) {
             throw new ResolverException("no gallery fetched!", ResolverException::INVALID_DATA_GIVEN);
@@ -220,17 +231,18 @@ class Gallery extends AbstractController {
             $this->deleteImage(array_shift($tokens), implode('__', $tokens), $all);
         }
         return new Content();
-    }
+    }*/
 
     /**
      * @throws \SFW2\Gallery\GalleryException
-     * @throws ResolverException
+     * @throws HttpUnprocessableContent
      */
-    public function changePreview(): Content {
+    public function changePreview(Request $request, ResponseEngine $responseEngine): Response
+    {
         $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING);
         $p = strpos($id, '__');
         if($p === false) {
-            throw new ResolverException("no gallery fetched!", ResolverException::INVALID_DATA_GIVEN);
+            throw new HttpUnprocessableContent();
         }
 
         $file = substr($id, $p + 2);
@@ -239,18 +251,19 @@ class Gallery extends AbstractController {
         $path = $this->getGalleryPath($galleryId);
         $this->generatePreview($file, self::DIMENSIONS, $path . '/high/', $path . '/' . self::PREVIEW_FILE);
         $this->generatePreview($file, self::DIMENSIONS_BIG, $path . '/high/', $path . '/' . self::PREVIEW_FILE_BIG);
-        return new Content();
+        return $responseEngine->render($request);
     }
 
     /**
      * @throws ResolverException
      * @throws \Exception
      */
-    public function rotateImage(): Content {
+    public function rotateImage(Request $request, ResponseEngine $responseEngine): Response
+    {
         $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING);
         $p = strpos($id, '__');
         if($p === false) {
-            throw new ResolverException("no gallery fetched!", ResolverException::INVALID_DATA_GIVEN);
+            throw new HttpUnprocessableContent();
         }
 
         $file = substr($id, $p + 2);
@@ -260,13 +273,14 @@ class Gallery extends AbstractController {
 
         $this->rotate($path . 'thumb/' . $file);
         $this->rotate($path . 'high/' . $file);
-        return new Content();
+        return $responseEngine->render($request);
     }
 
     /**
      * @throws \Exception
      */
-    protected function rotate(string $file) {
+    protected function rotate(string $file): void
+    {
         [, , $srcTyp] = getimagesize($file);
         switch ($srcTyp) {
             case IMAGETYPE_JPEG:
@@ -374,7 +388,8 @@ class Gallery extends AbstractController {
     /**
      * @throws \SFW2\Gallery\GalleryException
      */
-    public function addImage(): Content {
+    public function addImage(Request $request, ResponseEngine $responseEngine): Response
+    {
         $galleryId = filter_input(INPUT_POST, 'gallery', FILTER_SANITIZE_STRING);
 
         $folder = $this->getGalleryPath($galleryId);
@@ -388,7 +403,7 @@ class Gallery extends AbstractController {
             $this->generatePreview($filename, self::DIMENSIONS_BIG, $highFolder, $folder . '/' . self::PREVIEW_FILE_BIG);
         }
 
-        return new Content();
+        return $responseEngine->render($request);
     }
 
     /**
@@ -492,5 +507,4 @@ class Gallery extends AbstractController {
 
         return $local_date->format(new DateTime($date, new DateTimeZone($dateTimeZone)));
     }
-
 }

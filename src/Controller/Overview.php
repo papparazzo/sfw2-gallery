@@ -171,7 +171,7 @@ class Overview extends AbstractController {
         return new Content();
     }
 
-    public function create() : Content {
+    public function create(): Content {
         $content = new Content('Overview');
 
         $validateOnly = filter_input(INPUT_POST, 'validateOnly', FILTER_VALIDATE_BOOLEAN);
@@ -223,7 +223,7 @@ class Overview extends AbstractController {
         return $content;
     }
 
-    protected function getLastModificatonDate() : string {
+    protected function getLastModificatonDate(): string {
         $stmt =
             "SELECT `overview`.`Date` " .
             "FROM `{TABLE_PREFIX}_overview` AS `overview` " .

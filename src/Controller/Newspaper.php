@@ -56,7 +56,8 @@ class Newspaper extends AbstractController {
     ) {
     }
 
-    public function index(Request $request, ResponseEngine $responseEngine): Response {
+    public function index(Request $request, ResponseEngine $responseEngine): Response
+    {
         $pathId = (int)$request->getAttribute('sfw2_routing')['path_id'];
 
         $stmt =
@@ -98,8 +99,8 @@ class Newspaper extends AbstractController {
 
         return $responseEngine->render(
             $request,
-            "SFW2\\Gallery\\Newspaper",
-            $content
+            $content,
+            "SFW2\\Gallery\\Newspaper"
         );
     }
 
@@ -110,7 +111,8 @@ class Newspaper extends AbstractController {
     /**
      * @throws \SFW2\Routing\Resolver\ResolverException
      * /
-    public function delete(bool $all = false) : Content {
+    public function delete(Request $request, ResponseEngine $responseEngine): Response
+    {
         $entryId = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
         if($entryId === false) {
             throw new ResolverException("invalid data given", ResolverException::INVALID_DATA_GIVEN);
@@ -144,7 +146,8 @@ class Newspaper extends AbstractController {
         return new Content();
     }
 
-    public function create() : Content {
+    public function create(Request $request, ResponseEngine $responseEngine): Response
+    {
         $content = new Content('Newspaper');
 
         $validateOnly = filter_input(INPUT_POST, 'validateOnly', FILTER_VALIDATE_BOOLEAN);
@@ -214,13 +217,13 @@ class Newspaper extends AbstractController {
         }
 
          $local_date = IntlDateFormatter::create(
-                'de',
-                IntlDateFormatter::LONG,
-                IntlDateFormatter::NONE,
-                $dateTimeZone,
-                null,
-                null
-            );
+            'de',
+            IntlDateFormatter::LONG,
+            IntlDateFormatter::NONE,
+            $dateTimeZone,
+            null,
+            null
+        );
 
         return $local_date->format(new DateTime($date, new DateTimeZone($dateTimeZone)));
     }
