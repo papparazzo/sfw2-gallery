@@ -1,4 +1,4 @@
-<?php
+{{!
 
 /**
  *  SFW2 - SimpleFrameWork
@@ -20,25 +20,26 @@
  *
  */
 
-?>
-<h1><?php echo($this->caption);?></h1>
+}}
+<h1>{{title}}</h1>
 <div class="media mt-4">
-    <?php if($this->permission->createAllowed()): ?>
-    <img id="preview-image" class="rounded mr-4" src="<?php echo($this->previewImage);?>" >
-    <?php endif; ?>
+    {{!<?php if($this->permission->createAllowed()): ?>
+    <img id="preview-image" class="rounded mr-4" src="{ {previewImage} }">
+    <?php endif; ?>}}
     <div class="media-body">
-        <?php echo($this->description);?>
+        {{description}}
         <small style="font-style: italic;">
-            <div>Erstellt von <?php echo($this->mailaddr); ?> am <?php echo($this->creationDate); ?></div>
+            <div>Erstellt am {{creationDate}}</div>
         </small>
     </div>
 </div>
 <p class="mt-4">
     Zurück zur
-    <a class="link" href="?p=<?php echo($this->page);?>">
+    <a class="text-reset" href="?">
         Übersichtenseite
     </a>
 </p>
+{{!
 <?php if($this->permission->createAllowed()): ?>
 <div class="fileuploadArea"></div>
 <input id="curgal" type="hidden" value="<?php echo($this->id); ?>" />
@@ -95,12 +96,14 @@
 </div>
 
 <?php endif; ?>
+}}
 <div class="d-flex flex-wrap">
-    <?php foreach($this->pics as $k => $v): ?>
-    <div class="p-1 " id="<?php echo($this->getPathSimplified()); ?>_recordset_<?php echo($this->id . '__' . str_replace('.', '_', $v['ttp']));?>">
-        <a href="<?php echo($v['lnk']);?>" rel="lightbox-gallerie">
-            <img class="" alt="" src="<?php echo($v['src']); ?>" title="<?php echo($v['ttp']);?>" />
+    {{#each pics}}
+    <div class="p-1 ">
+        <a href="{{lnk}}" rel="lightbox-gallerie">
+            <img class="" alt="" src="{{src}}" title="{{ttp}}" />
         </a>
+       {{!
         <!--
         <div>
             <a
@@ -141,12 +144,15 @@
             >Drehen</button>
         </div>
         <?php endif; ?>
+        }}
     </div>
-    <?php endforeach; ?>
+    {{/each}}
 </div>
+{{!
 <?php if(count($this->pics) > 16): ?>
 <p>
     Hier geht's zurück zum <a class="link" href="#">Seitenanfang</a>
 </p>
 <?php endif; ?>
 <script src="/js/gallery.js"> </script>
+}}
