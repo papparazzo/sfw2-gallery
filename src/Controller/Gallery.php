@@ -33,7 +33,7 @@ use SFW2\Core\HttpExceptions\HttpUnprocessableContent;
 use SFW2\Database\DatabaseInterface;
 use SFW2\Routing\AbstractController;
 
-use SFW2\Routing\HelperTraits\getPathIdTrait;
+use SFW2\Routing\HelperTraits\getPathTrait;
 use SFW2\Routing\ResponseEngine;
 use SFW2\Validator\Ruleset;
 use SFW2\Validator\Validator;
@@ -44,7 +44,7 @@ use SFW2\Gallery\GalleryException;
 
 class Gallery extends AbstractController {
 
-    use getPathIdTrait;
+    use getPathTrait;
 
     use GalleryHelperTrait;
 
@@ -113,6 +113,9 @@ class Gallery extends AbstractController {
      */
     public function showGallery(Request $request, ResponseEngine $responseEngine): Response
     {
+
+        $pathId = $this->getPathId($request);
+
         $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
         if(!$id) {
             throw new HttpUnprocessableContent("no gallery fetched!");
@@ -129,7 +132,6 @@ class Gallery extends AbstractController {
         if(empty($row)) {
             throw new HttpUnprocessableContent("no gallery found for id <$id>!");
         }
-        $pathId = (int)$request->getAttribute('sfw2_routing')['path_id'];
         $path = $this->getGalleryPath($pathId, $id);
         $pics = [];
         if(is_dir($path . '/thumb/')) {
@@ -146,7 +148,7 @@ class Gallery extends AbstractController {
             'page'           => $page,
             'pics'           => $pics,
             'editable'       => true,
-            'previewImage'   => $this->getPreviewImage($id),
+            'previewImage'   => $this->getPreviewImage($pathId, $id),
             'maxFileUploads' => ini_get('max_file_uploads')
         ];
 
@@ -158,7 +160,6 @@ class Gallery extends AbstractController {
     }
 
     /**
-     * @return \SFW2\Routing\Result\Content
      * @noinspection PhpMissingParentCallCommonInspection
      */
     public function create(Request $request, ResponseEngine $responseEngine): Response
@@ -193,6 +194,11 @@ class Gallery extends AbstractController {
             ]
         );
 
+        return $responseEngine->render(
+            $request,
+            [],
+            "SFW2\\Gallery\\Gallery"
+        );
 
       /*
 
@@ -217,8 +223,9 @@ class Gallery extends AbstractController {
      * @throws \SFW2\Gallery\GalleryException
      * @throws ResolverException
      * @noinspection PhpMissingParentCallCommonInspection
-     * /
-    public function delete(Request $request, ResponseEngine $responseEngine): Response {
+     */
+    public function delete(Request $request, ResponseEngine $responseEngine): Response
+    {
         $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING);
         if(!$id) {
             throw new ResolverException("no gallery fetched!", ResolverException::INVALID_DATA_GIVEN);
@@ -231,7 +238,7 @@ class Gallery extends AbstractController {
             $this->deleteImage(array_shift($tokens), implode('__', $tokens), $all);
         }
         return new Content();
-    }*/
+    }
 
     /**
      * @throws \SFW2\Gallery\GalleryException
