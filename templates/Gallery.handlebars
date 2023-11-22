@@ -23,13 +23,13 @@
 }}
 <h1>{{title}}</h1>
 <div class="media mt-4">
-    {{!<?php if($this->permission->createAllowed()): ?>
-    <img id="preview-image" class="rounded mr-4" src="{ {previewImage} }">
-    <?php endif; ?>}}
+    {{#sfw2_authority.create}}
+    <img id="preview-image" class="rounded mr-4" src="{{previewImage}}" alt="preview image">
+    {{/sfw2_authority.create}}
     <div class="media-body">
         {{description}}
         <small style="font-style: italic;">
-            <div>Erstellt am {{creationDate}}</div>
+            Erstellt am {{creationDate}}
         </small>
     </div>
 </div>
@@ -39,8 +39,7 @@
         Übersichtenseite
     </a>
 </p>
-{{!
-<?php if($this->permission->createAllowed()): ?>
+{{#sfw2_authority.create}}
 <div class="fileuploadArea"></div>
 <input id="curgal" type="hidden" value="<?php echo($this->id); ?>" />
 <input id="curpage" type="hidden" value="<?php echo($this->page); ?>" />
@@ -63,13 +62,10 @@
         >hochladen</button>
     </div>
 
-    <?php /*
     <div class="fileSelectDescr">
         Datei hier ablegen oder klicken zum Hochladen
     </div>
     <div class="currfile" ></div>
-     *
-     */?>
 
 </div>
 <div class="noshow progress mb-1 ">
@@ -77,7 +73,7 @@
         id="progressbar-file"
         class="progress-bar progress-bar-striped bg-success progress-bar-animated"
         role="progressbar"
-        style="width: 0%"
+        style="width: 0"
         aria-valuenow="0"
         aria-valuemin="0"
         aria-valuemax="100"
@@ -88,15 +84,13 @@
         id="progressbar-all"
         class="progress-bar progress-bar-striped bg-success progress-bar-animated"
         role="progressbar"
-        style="width: 0%"
+        style="width: 0"
         aria-valuenow="0"
         aria-valuemin="0"
         aria-valuemax="100"
     >0% [Datei 5 von 7]</div>
 </div>
-
-<?php endif; ?>
-}}
+{{/sfw2_authority.create}}
 <div class="d-flex flex-wrap">
     {{#each pics}}
     <div class="p-1 ">
@@ -104,20 +98,7 @@
             <img class="" alt="" src="{{src}}" title="{{ttp}}" />
         </a>
        {{!
-        <!--
-        <div>
-            <a
-                id="clid<?php /*echo($entry['id']);*/?>"
-                style="font-weight: bold; font-size: 0.8em;"
-                class="fold"
-                title="Hier klicken um Kommentare zu lesen"
-                href="#"
-            >
-                12 Kommentare &#9660;
-            </a>
-        </div>
-        -->
-        <?php if($this->permission->createAllowed()): ?>
+        <?php if($this->permission->createAllowed()): ?>}}
         <div class="mt-2">
             <button
                 type="button"
@@ -130,20 +111,20 @@
             >löschen</button>
             <button
                 type="button"
-                class="btn btn-success btn-sm btnChangePreview"
+                class="btn btn-secondary btn-sm btnChangePreview"
                 data-url="<?php echo($this->getCurrentPath()); ?>"
                 data-item-id="<?php echo($this->id . '__' . $v['ttp']);?>"
                 data-form-id="<?php echo($this->getPathSimplified()); ?>"
             >Vorschau</button>
             <button
                 type="button"
-                class="btn btn-success btn-sm btnRotateImage"
+                class="btn btn-secondary btn-sm btnRotateImage"
                 data-url="<?php echo($this->getCurrentPath()); ?>"
                 data-item-id="<?php echo($this->id . '__' . $v['ttp']);?>"
                 data-form-id="<?php echo($this->getPathSimplified()); ?>"
             >Drehen</button>
         </div>
-        <?php endif; ?>
+       {{! <?php endif; ?>
         }}
     </div>
     {{/each}}
