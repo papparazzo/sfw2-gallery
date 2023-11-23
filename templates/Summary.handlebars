@@ -26,75 +26,66 @@
     Um Dir die Bilder der jeweiligen Galerie anzuschauen, klicke bitte auf das
     jeweilige Vorschaubild.
 </p>
-<div class="alert alert-success" role="alert">
+<div class="alert alert-info" role="alert">
     <strong>Anmerkung</strong>
     <p>
     Wenn ein Bild gelöscht werden soll, dann schreib bitte einen entsprechenden Hinweis an
     <a class="alert-link" href="mailto:{{sfw2_project.webmaster_mail_address}}">{{sfw2_project.webmaster_mail_address}}</a>.
     </p>
 </div>
-<p>
+<p class="pb-3">
     Du hast ebenfalls Bilder? Immer her damit. Wenn Du magst, kannst Du
     Dir die jeweiligen Galerien auch als Zip-Datei herunterladen. Die Archive
     enthalten die Bilder in der besten Auflösung...
 </p>
+{{#sfw2_authority.create}}
+<div class="pt-3 pb-5">
+    <button
+        type="button"
+        class="btn btn-secondary"
+        data-bs-toggle="modal"
+        data-bs-target="#sfw2-dialog-modal"
+        data-sfw2-form-id="{{sfw2_routing.path_simplified}}"
+        data-sfw2-url="{{sfw2_routing.path}}"
+    >
+        Neue Gallerie anlegen...
+    </button>
+</div>
 
-{{!<?php if($this->permission->createAllowed()): ?>}}
-<div class="row row-cols-1 row-cols-md-2 g-4">
-    <div class="col">
-        <div class="card mb-3 " style="max-width: 500px;">
-
-
-
-            <form id="<?php echo($this->getPathSimplified()); ?>" class="needs-validation noshow" novalidate >
-    <div class="row">
-        <label for="caption" class="col-sm-2 col-form-label">Name</label>
-        <div class="col-sm-4">
+<div id="{{sfw2_routing.path_simplified}}" class="d-none">
+    <form class="needs-validation" novalidate>
+        <div class="mb-3">
+            <label for="{{sfw2_routing.path_simplified}}_name" class="form-label">Name</label>
             <input
-                class="form-control form-control-sm"
+                id="{{sfw2_routing.path_simplified}}_name"
                 type="text"
-                name="caption"
-                value=""
-                placeholder="Gib hier den Namen der Gallerie ein..."
+                class="form-control"
+                name="name"
+                required="required"
                 maxlength="50"
                 title="Gib hier bitte die Überschrift der neuen Galerie ein."
-            />
-            <div class="invalid-feedback"></div>
+            >
+            <div class="form-text invalid-feedback">fehler</div>
         </div>
-    </div>
-    <div class="row">
-        <label for="description" class="col-sm-2 col-form-label">
-            Beschreibung
-        </label>
-        <div class="col-sm-9">
+        <div class="mb-3">
+            <label for="{{sfw2_routing.path_simplified}}_description" class="form-label">Beschreibung</label>
             <textarea
-                id="<?php echo($this->getPathSimplified()); ?>_area"
+                id="{{sfw2_routing.path_simplified}}_description"
                 class="form-control form-control-sm"
                 data-name="description"
                 placeholder="Hier kommt die Beschreibung rein ..."
-                title="Hier kommt der Inhalt hin. Max. 65.535 Buchstaben"
+                title="Hier kommt die Beschreibung der Gallerie hin. Max. 65.535 Buchstaben"
                 cols="30"
                 rows="10"
                 maxlength="65535"
             ></textarea>
-            <div class="invalid-feedback"></div>
+            <div class="invalid-feedback">fehler</div>
         </div>
-    </div>
-</form>
-<button
-    type="button"
-    class="btn btn-success btn-sm"
-    data-toggle="modal"
-    data-target="#createDialogModal"
-    data-url="<?php echo($this->getCurrentPath()); ?>"
-    data-form-id="<?php echo($this->getPathSimplified()); ?>"
->Neuer Eintrag</button>
 
-
-
-        </div>
-    </div>
-
+    </form>
+</div>
+{{/sfw2_authority.create}}
+<div class="row row-cols-1 row-cols-md-2 g-4">
     {{#each entries}}
     <div class="col">
         <div class="card mb-3 " style="max-width: 500px;">
