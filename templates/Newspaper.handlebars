@@ -1,0 +1,65 @@
+{{!
+
+/**
+ *  SFW2 - SimpleFrameWork
+ *
+ *  Copyright (C) 2017  Stefan Paproth
+ *
+ *  This program is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Affero General Public License as
+ *  published by the Free Software Foundation, either version 3 of the
+ *  License, or (at your option) any later version.
+ *
+ *  This program is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ *  GNU Affero General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Affero General Public License
+ *  along with this program. If not, see <http://www.gnu.org/licenses/agpl.txt>.
+ *
+ */
+
+}}
+<h1  class="pb-5">{{title}}</h1>
+<p>{{about}}</p>
+<div class="alert alert-info" role="alert">
+    <strong>Anmerkung</strong>
+    <p>
+    Solltest Du ebenfalls einen interessanten Artikel entdeckt haben
+    dann immer her damit. Auch alte Mitteilungen sind gerne willkommen.
+    Am besten Du schickst ihn per E-Mail an
+    <a class="alert-link" href="mailto:{{sfw2_project.webmaster_mail_address}}">{{sfw2_project.webmaster_mail_address}}</a>.
+    Bitte gib den Namen der Zeitung und das jeweilige Datum mit an.
+    </p>
+</div>
+<div class="vstack gap-3 align-items-center">
+   {{#each items}}
+    <div class="p-2 my-5 " id="{{formid}}_recordset_{{id}}">
+        <p class="card-text">
+            <a href="{{image}}" data-lightbox="image-1" data-title="{{title}}">
+                <img class="img-fluid rounded" title="{{title}}" alt="{{title}}" src="{{preview}}" />
+            </a>
+        </p>
+        <small style="font-style: italic;">
+            Erstellt am <time pubdate="pubdate">{{date}}</time>;
+            Quelle: {{source}}
+            {{#if deleteAllowed}}
+            <input type="hidden" id="{{formid}}_title_{{id}}" value="{{title}} vom {{date}}" />
+            <button
+                type="button"
+                class="btn btn-danger btn-sm ml-4"
+                data-toggle="modal"
+                data-target="#deleteDialogModal"
+                data-url="{{url}}"
+                data-item-id="{{id}}"
+                data-form-id="{{formid}}"
+            >löschen</button>
+            {{/if}}
+        </small>
+        <div>
+            {{title}}
+        </div>
+    </div>
+    {{/each}}
+</div>
