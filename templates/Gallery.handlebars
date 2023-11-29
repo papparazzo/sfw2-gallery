@@ -23,9 +23,9 @@
 }}
 <h1>{{title}}</h1>
 <div class="media mt-4">
-    {{#sfw2_authority.create}}
+    {{#if sfw2_authority.create}}
     <img id="preview-image" class="rounded mr-4" src="{{previewImage}}" alt="preview image">
-    {{/sfw2_authority.create}}
+    {{/if}}
     <div class="media-body">
         {{description}}
         <small style="font-style: italic;">
@@ -39,7 +39,7 @@
         Übersichtenseite
     </a>
 </p>
-{{#sfw2_authority.create}}
+{{#if sfw2_authority.create}}
 <div class="fileuploadArea"></div>
 <input id="curgal" type="hidden" value="<?php echo($this->id); ?>" />
 <input id="curpage" type="hidden" value="<?php echo($this->page); ?>" />
@@ -90,7 +90,7 @@
         aria-valuemax="100"
     >0% [Datei 5 von 7]</div>
 </div>
-{{/sfw2_authority.create}}
+{{/if}}
 <div class="d-flex flex-wrap">
     {{#each pics}}
     <div class="p-1 ">
