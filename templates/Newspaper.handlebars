@@ -33,6 +33,63 @@
     Bitte gib den Namen der Zeitung und das jeweilige Datum mit an.
     </p>
 </div>
+{{#sfw2_authority.create}}
+<div class="pt-3 pb-5">
+    <button
+        type="button"
+        class="btn btn-secondary"
+        data-bs-toggle="modal"
+        data-bs-target="#sfw2-form-dialog-modal"
+        data-sfw2-form-id="{{sfw2_routing.path_simplified}}"
+        data-sfw2-url="{{sfw2_routing.path}}"
+    >
+        Neuen Zeitungsartikel anlegen...
+    </button>
+</div>
+<div id="{{sfw2_routing.path_simplified}}" class="d-none">
+    <form class="needs-validation" novalidate>
+        <div class="mb-3">
+            <label for="{{sfw2_routing.path_simplified}}_caption" class="form-label">Name <i title="Pflichtfeld" class="bi bi-box-arrow-in-down-left"></i></label>
+            <input
+                id="{{sfw2_routing.path_simplified}}_caption"
+                type="text"
+                class="form-control"
+                name="title"
+                required="required"
+                maxlength="50"
+                title="Gib hier bitte die Überschrift der neuen Galerie ein."
+            >
+            <div class="form-text invalid-feedback">fehler</div>
+        </div>
+        <div class="mb-3">
+            <label for="{{sfw2_routing.path_simplified}}_date" class="form-label">Veröffentlichung <i title="Pflichtfeld" class="bi bi-box-arrow-in-down-left"></i></label>
+            <input
+                id="{{sfw2_routing.path_simplified}}_date"
+                class="form-control "
+                type="date"
+                name="date"
+                required="required"
+                title="Gib hier bitte das Veröffentlichungsdatum im Format TT.MM.JJJJ ein."
+                maxlength="10"
+            />
+            <div class="invalid-feedback">fehler</div>
+        </div>
+        <div class="mb-3">
+            <label for="{{sfw2_routing.path_simplified}}_source" class="form-label">Quelle <i title="Pflichtfeld" class="bi bi-box-arrow-in-down-left"></i></label>
+            <input
+                type="text"
+                id="{{sfw2_routing.path_simplified}}_source"
+                class="form-control form-control-sm"
+                name="source"
+                title="Wo kommt der Artikel her? HAZ, NDZ..."
+                maxlength="5"
+            />
+            <div class="invalid-feedback">fehler</div>
+        </div>
+
+    </form>
+</div>
+{{/sfw2_authority.create}}
 <div class="vstack gap-3 align-items-center">
    {{#each items}}
     <div class="p-2 my-5 " id="{{formid}}_recordset_{{id}}">
