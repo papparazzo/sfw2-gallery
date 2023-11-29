@@ -31,6 +31,7 @@ use Psr\Http\Message\ServerRequestInterface as Request;
 use SFW2\Database\DatabaseInterface;
 use SFW2\Routing\AbstractController;
 
+use SFW2\Routing\HelperTraits\getPathTrait;
 use SFW2\Routing\ResponseEngine;
 use SFW2\Validator\Ruleset;
 use SFW2\Validator\Validator;
@@ -41,6 +42,7 @@ use SFW2\Gallery\Helper\GalleryHelperTrait;
 
 class Newspaper extends AbstractController {
 
+    use getPathTrait;
     use GalleryHelperTrait;
 
     const SUMMERIES_PER_PAGE = 3;
@@ -58,7 +60,7 @@ class Newspaper extends AbstractController {
 
     public function index(Request $request, ResponseEngine $responseEngine): Response
     {
-        $pathId = (int)$request->getAttribute('sfw2_routing')['path_id'];
+        $pathId = $this->getPathId($request);
 
         $stmt =
             "SELECT `Id`, `Title`, `Date`, `Source`, `FileName` " .
@@ -171,7 +173,8 @@ class Newspaper extends AbstractController {
             return $content;
         }
 
-        $folder = $this->getGalleryPath();
+        $pathId = $this->getPathId($request);
+        $folder = $this->getGalleryPath($pathId);
         $fileName = $this->addFile($folder, self::DIMENSIONS);
 
         $date = $values['date']['value'];
