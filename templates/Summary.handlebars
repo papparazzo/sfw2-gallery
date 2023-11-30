@@ -55,12 +55,12 @@
 <div id="{{sfw2_routing.path_simplified}}" class="d-none">
     <form class="needs-validation" novalidate>
         <div class="mb-3">
-            <label for="{{sfw2_routing.path_simplified}}_name" class="form-label">Name</label>
+            <label for="{{sfw2_routing.path_simplified}}_caption" class="form-label">Name <i title="Pflichtfeld" class="bi bi-box-arrow-in-down-left"></i></label>
             <input
-                id="{{sfw2_routing.path_simplified}}_name"
+                id="{{sfw2_routing.path_simplified}}_caption"
                 type="text"
                 class="form-control"
-                name="name"
+                name="caption"
                 required="required"
                 maxlength="50"
                 title="Gib hier bitte die Überschrift der neuen Galerie ein."
@@ -68,12 +68,11 @@
             <div class="form-text invalid-feedback">fehler</div>
         </div>
         <div class="mb-3">
-            <label for="{{sfw2_routing.path_simplified}}_description" class="form-label">Beschreibung</label>
+            <label for="{{sfw2_routing.path_simplified}}_description" class="form-label">Beschreibung <i title="Pflichtfeld" class="bi bi-box-arrow-in-down-left"></i></label>
             <textarea
                 id="{{sfw2_routing.path_simplified}}_description"
                 class="form-control form-control-sm"
-                data-name="description"
-                placeholder="Hier kommt die Beschreibung rein ..."
+                name="description"
                 title="Hier kommt die Beschreibung der Gallerie hin. Max. 65.535 Buchstaben"
                 cols="30"
                 rows="10"
