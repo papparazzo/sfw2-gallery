@@ -150,27 +150,29 @@ class Newspaper extends AbstractController {
 
     public function create(Request $request, ResponseEngine $responseEngine): Response
     {
-        $content = new Content('Newspaper');
-
         $validateOnly = filter_input(INPUT_POST, 'validateOnly', FILTER_VALIDATE_BOOLEAN);
 
         $rulset = new Ruleset();
         $rulset->addNewRules('title', new IsNotEmpty());
-        $rulset->addNewRules('date', new IsNotEmpty(), new IsDate(IsDate::PAST_DATE));
+        $rulset->addNewRules('date', new IsNotEmpty(), new IsDate(DateCompareEnum::PAST_DATE));
         $rulset->addNewRules('source', new IsNotEmpty());
 
         $validator = new Validator($rulset);
         $values = [];
 
         $error = $validator->validate($_POST, $values);
-        $content->assignArray($values);
 
         if(!$error) {
-            $content->setError(true);
+            return
+                $responseEngine->
+                render($request, ['sfw2_payload' => $values])->
+                withStatus(StatusCodeInterface::STATUS_UNPROCESSABLE_ENTITY);
         }
 
-        if($validateOnly || !$error) {
-            return $content;
+        if($validateOnly) {
+            return
+                $responseEngine->
+                render($request, ['sfw2_payload' => $values]);
         }
 
         $pathId = $this->getPathId($request);
@@ -193,10 +195,10 @@ class Newspaper extends AbstractController {
         $this->database->insert(
             $stmt,
             [
-                $date, $title, $source, $this->user->getUserId(), $this->pathId, $fileName
+                $date, $title, $source, $this->user->getUserId(), $pathId, $fileName
             ]
         );
-        return $content;
+        return $responseEngine->render($request);
     }
 
     protected function getLastModificatonDate() : string {
