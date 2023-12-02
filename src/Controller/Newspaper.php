@@ -28,6 +28,7 @@ use Exception;
 use IntlDateFormatter;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use SFW2\Core\Utils\DateTimeHelper;
 use SFW2\Database\DatabaseInterface;
 use SFW2\Routing\AbstractController;
 
@@ -54,7 +55,8 @@ class Newspaper extends AbstractController {
     protected string $about;
 
     public function __construct(
-        protected DatabaseInterface $database
+        protected DatabaseInterface $database,
+        protected DateTimeHelper $dateTimeHelper
     ) {
     }
 
