@@ -28,6 +28,9 @@ use Exception;
 use IntlDateFormatter;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use SFW2\Core\HttpExceptions\HttpForbidden;
+use SFW2\Core\HttpExceptions\HttpInternalServerError;
+use SFW2\Core\HttpExceptions\HttpUnprocessableContent;
 use SFW2\Core\Utils\DateTimeHelper;
 use SFW2\Database\DatabaseInterface;
 use SFW2\Routing\AbstractController;
@@ -119,7 +122,7 @@ class Newspaper extends AbstractController {
     {
         $entryId = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
         if($entryId === false) {
-            throw new ResolverException("invalid data given", ResolverException::INVALID_DATA_GIVEN);
+            throw new HttpUnprocessableContent("invalid data given");
         }
 
         $stmt = "SELECT `FileName` FROM `{TABLE_PREFIX}_newspaperarticles` ";
@@ -132,17 +135,17 @@ class Newspaper extends AbstractController {
         $row = $this->database->selectRow($stmt . $where, [$entryId, $this->pathId]);
 
         if(empty($row)) {
-            throw new ResolverException("no entry <$entryId> found", ResolverException::NO_PERMISSION);
+            throw new HttpForbidden("no entry <$entryId> found");
         }
 
         $preview = $this->getImageFile($row['FileName'], true);
         if(!unlink(ltrim($preview, DIRECTORY_SEPARATOR))) {
-            throw new ResolverException("unable to delete file <$preview>", ResolverException::UNKNOWN_ERROR);
+            throw new HttpInternalServerError("unable to delete file <$preview>");
         }
 
         $hight = $this->getImageFile($row['FileName'], false);
         if(!unlink(ltrim($hight, DIRECTORY_SEPARATOR))) {
-            throw new ResolverException("unable to delete file <$hight>", ResolverException::UNKNOWN_ERROR);
+            throw new HttpInternalServerError("unable to delete file <$hight>");
         }
 
         $stmt = "DELETE FROM `{TABLE_PREFIX}_newspaperarticles` " . $where;
