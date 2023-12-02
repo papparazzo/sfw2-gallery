@@ -37,6 +37,7 @@ use SFW2\Routing\AbstractController;
 
 use SFW2\Routing\HelperTraits\getPathTrait;
 use SFW2\Routing\ResponseEngine;
+use SFW2\Validator\Enumerations\DateCompareEnum;
 use SFW2\Validator\Ruleset;
 use SFW2\Validator\Validator;
 use SFW2\Validator\Validators\IsNotEmpty;
