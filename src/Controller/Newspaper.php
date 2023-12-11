@@ -55,6 +55,7 @@ class Newspaper extends AbstractController {
     const DIMENSIONS = 600;
 
     protected User $user;
+
     protected string $title;
     protected string $about;
 
@@ -112,8 +113,8 @@ class Newspaper extends AbstractController {
         );
     }
 
-    /** @noinspection PhpMissingParentCallCommonInspection */
     /**
+     * @noinspection PhpMissingParentCallCommonInspection
      * @throws HttpForbidden
      * @throws HttpUnprocessableContent
      * @throws HttpInternalServerError
