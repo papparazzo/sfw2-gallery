@@ -127,7 +127,13 @@ class Newspaper extends AbstractController {
         }
 
         $stmt = "SELECT `FileName` FROM `{TABLE_PREFIX}_newspaperarticles` ";
-        $where = "WHERE `Id` = '%s' AND `PathId` = '%s' ";
+        $where = "WHERE `Id` = %s AND `PathId` = %s' ";
+        /*
+        * if(!$all) {
+        * $where .= "AND `UserId` = '" . $this->database->escape($this->user->getUserId()) . "'";
+        * }
+        */
+        $pathId = $this->getPathId($request);
 
         if(!$all) {
             $where .= "AND `UserId` = '" . $this->database->escape($this->user->getUserId()) . "'";
@@ -139,12 +145,12 @@ class Newspaper extends AbstractController {
             throw new HttpForbidden("no entry <$entryId> found");
         }
 
-        $preview = $this->getImageFile($row['FileName'], true);
+        $preview = $this->getImageFile($row['FileName'], $pathId, true);
         if(!unlink(ltrim($preview, DIRECTORY_SEPARATOR))) {
             throw new HttpInternalServerError("unable to delete file <$preview>");
         }
 
-        $hight = $this->getImageFile($row['FileName'], false);
+        $hight = $this->getImageFile($row['FileName'], $pathId, false);
         if(!unlink(ltrim($hight, DIRECTORY_SEPARATOR))) {
             throw new HttpInternalServerError("unable to delete file <$hight>");
         }
