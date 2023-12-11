@@ -25,6 +25,7 @@ namespace SFW2\Gallery\Controller;
 use DateTime;
 use DateTimeZone;
 use Exception;
+use Fig\Http\Message\StatusCodeInterface;
 use IntlDateFormatter;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
@@ -53,7 +54,6 @@ class Newspaper extends AbstractController {
     const SUMMERIES_PER_PAGE = 3;
     const DIMENSIONS = 600;
 
-    protected Config $config;
     protected User $user;
     protected string $title;
     protected string $about;
@@ -112,13 +112,12 @@ class Newspaper extends AbstractController {
         );
     }
 
-    /*
-    public function read(bool $all = false) : Content {
-    }
-
+    /** @noinspection PhpMissingParentCallCommonInspection */
     /**
-     * @throws \SFW2\Routing\Resolver\ResolverException
-     * /
+     * @throws HttpForbidden
+     * @throws HttpUnprocessableContent
+     * @throws HttpInternalServerError
+     */
     public function delete(Request $request, ResponseEngine $responseEngine): Response
     {
         $entryId = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
@@ -135,11 +134,7 @@ class Newspaper extends AbstractController {
         */
         $pathId = $this->getPathId($request);
 
-        if(!$all) {
-            $where .= "AND `UserId` = '" . $this->database->escape($this->user->getUserId()) . "'";
-        }
-
-        $row = $this->database->selectRow($stmt . $where, [$entryId, $this->pathId]);
+        $row = $this->database->selectRow($stmt . $where, [$entryId, $pathId]);
 
         if(empty($row)) {
             throw new HttpForbidden("no entry <$entryId> found");
@@ -156,10 +151,11 @@ class Newspaper extends AbstractController {
         }
 
         $stmt = "DELETE FROM `{TABLE_PREFIX}_newspaperarticles` " . $where;
-        $this->database->delete($stmt, [$entryId, $this->pathId]);
-        return new Content();
+        $this->database->delete($stmt, [$entryId, $pathId]);
+        return $responseEngine->render($request);
     }
 
+    /** @noinspection PhpMissingParentCallCommonInspection */
     public function create(Request $request, ResponseEngine $responseEngine): Response
     {
         $validateOnly = filter_input(INPUT_POST, 'validateOnly', FILTER_VALIDATE_BOOLEAN);
@@ -220,7 +216,7 @@ class Newspaper extends AbstractController {
             "ORDER BY `newspaperarticles`.`Date`";
 
         return (string)$this->database->selectSingle($stmt, [$this->pathId]);
-    }*/
+    }
 
     // TODO: Make this a trait
     /**
