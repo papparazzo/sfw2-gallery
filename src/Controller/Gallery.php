@@ -33,7 +33,7 @@ use SFW2\Core\HttpExceptions\HttpUnprocessableContent;
 use SFW2\Database\DatabaseInterface;
 use SFW2\Routing\AbstractController;
 
-use SFW2\Routing\HelperTraits\getPathTrait;
+use SFW2\Routing\HelperTraits\getRoutingDataTrait;
 use SFW2\Routing\ResponseEngine;
 use SFW2\Validator\Ruleset;
 use SFW2\Validator\Validator;
@@ -44,7 +44,7 @@ use SFW2\Gallery\GalleryException;
 
 class Gallery extends AbstractController {
 
-    use getPathTrait;
+    use getRoutingDataTrait;
 
     use GalleryHelperTrait;
 
