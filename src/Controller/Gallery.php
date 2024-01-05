@@ -68,11 +68,15 @@ class Gallery extends AbstractController {
        */
     }
 
+    /**
+     * @throws HttpNotFound
+     * @throws Exception
+     */
     public function index(Request $request, ResponseEngine $responseEngine): Response
     {
         $pathId = $this->getPathId($request);
 
-        $stmt =
+        $stmt = /** @lang MySQL */
             "SELECT `Id`, `Title`, `Description`, `CreationDate` " .
             "FROM `{TABLE_PREFIX}_imagegalleries` AS `imagegalleries` " .
             "WHERE `PathId` = %s " .
@@ -109,20 +113,21 @@ class Gallery extends AbstractController {
     }
 
     /**
-     * @throws HttpUnprocessableContent
+     * @throws HttpUnprocessableContent|HttpNotFound
+     * @throws HttpBadRequest
+     * @throws Exception
      */
     public function showGallery(Request $request, ResponseEngine $responseEngine): Response
     {
-
         $pathId = $this->getPathId($request);
 
-        $id = filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
+        $id = (int)filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
         if(!$id) {
             throw new HttpUnprocessableContent("no gallery fetched!");
         }
         $page = (int)filter_input(INPUT_GET, 'page', FILTER_VALIDATE_INT);
 
-        $stmt =
+        $stmt = /** @lang MySQL */
             "SELECT `Title`, `CreationDate`, `Description` " .
             "FROM `{TABLE_PREFIX}_imagegalleries` AS `imagegalleries` " .
             "WHERE `imagegalleries`.`Id` = %s ";
@@ -130,7 +135,7 @@ class Gallery extends AbstractController {
         $row = $this->database->selectRow($stmt, [$id]);
 
         if(empty($row)) {
-            throw new HttpUnprocessableContent("no gallery found for id <$id>!");
+            throw new HttpBadRequest("no gallery found for id <$id>!");
         }
         $path = $this->getGalleryPath($pathId, $id);
         $pics = [];
@@ -143,7 +148,7 @@ class Gallery extends AbstractController {
             'title'          => $row['Title'],
             'id'             => (int)$id,
         #'mailaddr' =>          (string)$this->getEMail($row["Email"], $row['Creator'], 'Galerie ' . $row['Title'] . ' (' . $cd . ")"));
-            'creationDate'   => $cd,
+            'creationDate'   => $this->dateTimeHelper->getDate($row['CreationDate']),
             'description'    => $row['Description'],
             'page'           => $page,
             'pics'           => $pics,
@@ -152,11 +157,7 @@ class Gallery extends AbstractController {
             'maxFileUploads' => ini_get('max_file_uploads')
         ];
 
-        return $responseEngine->render(
-            $request,
-            $content,
-            "SFW2\\Gallery\\Gallery"
-        );
+        return $responseEngine->render($request, $content, "SFW2\\Gallery\\Gallery");
     }
 
     /**
@@ -220,9 +221,9 @@ class Gallery extends AbstractController {
     }
 
     /**
-     * @throws \SFW2\Gallery\GalleryException
-     * @throws ResolverException
      * @noinspection PhpMissingParentCallCommonInspection
+     * @throws HttpBadRequest
+     * @throws HttpNotFound
      */
     public function delete(Request $request, ResponseEngine $responseEngine): Response
     {
@@ -241,12 +242,13 @@ class Gallery extends AbstractController {
     }
 
     /**
-     * @throws \SFW2\Gallery\GalleryException
      * @throws HttpUnprocessableContent
+     * @throws HttpNotFound
+     * @throws Exception
      */
     public function changePreview(Request $request, ResponseEngine $responseEngine): Response
     {
-        $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING);
+        $id = htmlspecialchars($_POST['id']);
         $p = strpos($id, '__');
         if($p === false) {
             throw new HttpUnprocessableContent();
@@ -262,12 +264,11 @@ class Gallery extends AbstractController {
     }
 
     /**
-     * @throws ResolverException
      * @throws \Exception
      */
     public function rotateImage(Request $request, ResponseEngine $responseEngine): Response
     {
-        $id = filter_input(INPUT_POST, 'id', FILTER_SANITIZE_STRING);
+        $id = htmlspecialchars($_POST['id']);
         $p = strpos($id, '__');
         if($p === false) {
             throw new HttpUnprocessableContent();
