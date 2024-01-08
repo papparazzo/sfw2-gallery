@@ -38,15 +38,13 @@
     Dir die jeweiligen Galerien auch als Zip-Datei herunterladen. Die Archive
     enthalten die Bilder in der besten Auflösung...
 </p>
-{{#sfw2_authority.create}}
+{{#if create_allowed}}
 <div class="pt-3 pb-5">
     <button
         type="button"
-        class="btn btn-secondary"
-        data-bs-toggle="modal"
-        data-bs-target="#sfw2-form-dialog-modal"
-        data-sfw2-form-id="{{sfw2_routing.path_simplified}}"
-        data-sfw2-url="{{sfw2_routing.path}}"
+        class="btn btn-secondary sfw2-create-button"
+        data-sfw2-form-id="#{{sfw2_routing.path_simplified}}"
+        data-sfw2-url="{{sfw2_routing.path}}?do=create"
     >
         Neue Gallerie anlegen...
     </button>
@@ -55,7 +53,7 @@
 <div id="{{sfw2_routing.path_simplified}}" class="d-none">
     <form class="needs-validation" novalidate>
         <div class="mb-3">
-            <label for="{{sfw2_routing.path_simplified}}_caption" class="form-label">Name <i title="Pflichtfeld" class="bi bi-box-arrow-in-down-left"></i></label>
+            <label for="{{sfw2_routing.path_simplified}}_caption" class="form-label text-body-secondary">Title</label>
             <input
                 id="{{sfw2_routing.path_simplified}}_caption"
                 type="text"
@@ -65,10 +63,10 @@
                 maxlength="50"
                 title="Gib hier bitte die Überschrift der neuen Galerie ein."
             >
-            <div class="form-text invalid-feedback">fehler</div>
+            <div class="form-text invalid-feedback"></div>
         </div>
         <div class="mb-3">
-            <label for="{{sfw2_routing.path_simplified}}_description" class="form-label">Beschreibung <i title="Pflichtfeld" class="bi bi-box-arrow-in-down-left"></i></label>
+            <label for="{{sfw2_routing.path_simplified}}_description" class="form-label text-body-secondary">Beschreibung</label>
             <textarea
                 id="{{sfw2_routing.path_simplified}}_description"
                 class="form-control form-control-sm"
@@ -78,15 +76,14 @@
                 rows="10"
                 maxlength="65535"
             ></textarea>
-            <div class="invalid-feedback">fehler</div>
+            <div class="invalid-feedback"></div>
         </div>
-
     </form>
 </div>
-{{/sfw2_authority.create}}
+{{/if}}
 <div class="row row-cols-1 row-cols-md-2 g-4">
     {{#each entries}}
-    <div class="col">
+    <div id="{{../sfw2_routing.path_simplified}}_recordset_{{id}}" class="col">
         <div class="card mb-3 " style="max-width: 500px;">
             <div class="row g-0">
                 <div style="background-color: #d3d6d94d; min-height: 130px;" class="col-md-4">
@@ -95,8 +92,22 @@
                     </a>
                 </div>
                 <div class="col-md-8">
+                    <input
+                        type="hidden" id="{{../sfw2_routing.path_simplified}}_title_{{id}}"
+                        value="{{title}}"
+                    />
                     <div class="card-body">
-                        <h5 class="card-title pb-2">{{title}}</h5>
+                        <h5 class="card-title pb-2">{{title}}
+                            {{#if ../delete_allowed}}
+                            <button
+                                type="button"
+                                class="btn btn-light btn-sm ms-1 sfw2-delete-button"
+                                data-sfw2-url="{{../sfw2_routing.path}}?do=delete"
+                                data-sfw2-item-id="{{id}}"
+                                data-sfw2-form-id="#{{../sfw2_routing.path_simplified}}"
+                            ><i class="bi bi-trash"></i></button>
+                            {{/if}}
+                        </h5>
                         <h6 class="card-subtitle mb-2 text-body-secondary">{{{description}}}</h6>
                     </div>
                 </div>
