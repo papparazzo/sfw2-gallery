@@ -28,7 +28,7 @@
     {{/if}}
     <div class="media-body">
         {{{description}}}
-        <small style="font-style: italic;">
+        <small class="fst-italic">
             Erstellt am {{creationDate}}
         </small>
     </div>
@@ -124,12 +124,10 @@
                 data-form-id="<?php echo($this->getPathSimplified()); ?>"
             >Drehen</button>
         </div>
-       {{! <?php endif; ?>
-        }}
     </div>
     {{/each}}
 </div>
-{{!
+{{! TODO:
 <?php if(count($this->pics) > 16): ?>
 <p>
     Hier geht's zurück zum <a class="link" href="#">Seitenanfang</a>
