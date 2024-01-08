@@ -33,15 +33,13 @@
     Bitte gib den Namen der Zeitung und das jeweilige Datum mit an.
     </p>
 </div>
-{{#sfw2_authority.create}}
+{{#if create_allowed}}
 <div class="pt-3 pb-5">
     <button
         type="button"
-        class="btn btn-secondary"
-        data-bs-toggle="modal"
-        data-bs-target="#sfw2-form-dialog-modal"
-        data-sfw2-form-id="{{sfw2_routing.path_simplified}}"
-        data-sfw2-url="{{sfw2_routing.path}}"
+        class="btn btn-secondary sfw2-create-button"
+        data-sfw2-form-id="#{{sfw2_routing.path_simplified}}"
+        data-sfw2-url="{{sfw2_routing.path}}?do=create"
     >
         Neuen Zeitungsartikel anlegen...
     </button>
@@ -49,20 +47,20 @@
 <div id="{{sfw2_routing.path_simplified}}" class="d-none">
     <form class="needs-validation" novalidate>
         <div class="mb-3">
-            <label for="{{sfw2_routing.path_simplified}}_caption" class="form-label">Name <i title="Pflichtfeld" class="bi bi-box-arrow-in-down-left"></i></label>
+            <label for="{{sfw2_routing.path_simplified}}_title" class="form-label text-body-secondary">Title</label>
             <input
-                id="{{sfw2_routing.path_simplified}}_caption"
+                id="{{sfw2_routing.path_simplified}}_title"
                 type="text"
                 class="form-control"
                 name="title"
                 required="required"
                 maxlength="50"
-                title="Gib hier bitte die Überschrift der neuen Galerie ein."
+                title="Gib hier bitte die Überschrift des neuen Zeitungsartikels ein."
             >
-            <div class="form-text invalid-feedback">fehler</div>
+            <div class="form-text invalid-feedback"></div>
         </div>
         <div class="mb-3">
-            <label for="{{sfw2_routing.path_simplified}}_date" class="form-label">Veröffentlichung <i title="Pflichtfeld" class="bi bi-box-arrow-in-down-left"></i></label>
+            <label for="{{sfw2_routing.path_simplified}}_date" class="form-label text-body-secondary">Veröffentlichung</label>
             <input
                 id="{{sfw2_routing.path_simplified}}_date"
                 class="form-control "
@@ -72,24 +70,40 @@
                 title="Gib hier bitte das Veröffentlichungsdatum im Format TT.MM.JJJJ ein."
                 maxlength="10"
             />
-            <div class="invalid-feedback">fehler</div>
+            <div class="invalid-feedback"></div>
         </div>
         <div class="mb-3">
-            <label for="{{sfw2_routing.path_simplified}}_source" class="form-label">Quelle <i title="Pflichtfeld" class="bi bi-box-arrow-in-down-left"></i></label>
+            <label for="{{sfw2_routing.path_simplified}}_source" class="form-label text-body-secondary">Quelle</label>
             <input
-                type="text"
                 id="{{sfw2_routing.path_simplified}}_source"
+                type="text"
                 class="form-control form-control-sm"
                 name="source"
                 title="Wo kommt der Artikel her? HAZ, NDZ..."
                 maxlength="5"
             />
-            <div class="invalid-feedback">fehler</div>
+            <div class="invalid-feedback"></div>
         </div>
-
+        <div class="mb-3">
+            <label for="{{sfw2_routing.path_simplified}}_file" class="form-label text-body-secondary">Zeitungsartikel</label>
+            <input
+                id="{{sfw2_routing.path_simplified}}_file"
+                data-sfw2-onlyimage="true"
+                accept="image/jpeg,image/png,image/gif,image/bmp,image/webp,image/tiff"
+                class="form-control"
+                required
+                type="file"
+            />
+            <div class="invalid-feedback"></div>
+        </div>
+        <div class="  mb-1 ">
+            <div style="height: 10px" class="progress" role="progressbar" aria-label="Success example" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">
+                <div class="progress-bar progress-bar-striped bg-success progress-bar-animated"></div>
+            </div>
+        </div>
     </form>
 </div>
-{{/sfw2_authority.create}}
+{{/if}}
 <div class="vstack gap-3 align-items-center">
    {{#each items}}
     <div class="p-2 my-5 " id="{{formid}}_recordset_{{id}}">
@@ -101,16 +115,14 @@
         <small style="font-style: italic;">
             Erstellt am <time pubdate="pubdate">{{date}}</time>;
             Quelle: {{source}}
-            {{#if deleteAllowed}}
+            {{#if ../deleteAllowed}}
             <input type="hidden" id="{{formid}}_title_{{id}}" value="{{title}} vom {{date}}" />
             <button
                 type="button"
-                class="btn btn-danger btn-sm ml-4"
-                data-toggle="modal"
-                data-target="#deleteDialogModal"
-                data-url="{{url}}"
-                data-item-id="{{id}}"
-                data-form-id="{{formid}}"
+                class="btn btn-sm btn-light ml-4 sfw2-delete-button"
+                data-sfw2-url="{{../sfw2_routing.path}}?do=delete"
+                data-sfw2-item-id="{{id}}"
+                data-sfw2-form-id="#{{../sfw2_routing.path_simplified}}"
             >löschen</button>
             {{/if}}
         </small>

@@ -23,7 +23,7 @@
 }}
 <h1>{{title}}</h1>
 <div class="media mt-4">
-    {{#if sfw2_authority.create}}
+    {{#if create_allowed}}
     <img id="preview-image" class="rounded mr-4" src="{{previewImage}}" alt="preview image">
     {{/if}}
     <div class="media-body">
@@ -39,90 +39,97 @@
         Übersichtenseite
     </a>
 </p>
-{{#if sfw2_authority.create}}
+{{#if create_allowed}}
 <div class="fileuploadArea"></div>
-<input id="curgal" type="hidden" value="<?php echo($this->id); ?>" />
-<input id="curpage" type="hidden" value="<?php echo($this->page); ?>" />
-<div class="dropzone mb-4">
-    <a class="btnRemove noshow" href="#">x</a>
-    <div class="clearFileSelect">
+<input id="curgal" type="hidden" value="{{id}}" />
+<input id="curpage" type="hidden" value="{{page}}" />
+<div class="sfw2-dropzone mb-4 pt-5 px-5">
+    <div class="mb-3">
+    <label for="formFileMultiple" class="form-label">Hier die Bilder auswählen</label>
         <input
-            class="fileselectupload"
-            data-onlyimage="true"
+            class="form-control sfw2-file-select-upload"
             type="file"
             name="file"
-            style="width: 24em;"
-            multiple="multiple"
+            data-onlyimage="true"
             accept="image/jpeg,image/png,image/gif,image/bmp,image/webp,image/tiff"
+            id="formFileMultiple" multiple
         >
+    </div>
+    <div class=" progress mb-1 ">
+        <div
+            id="progressbar-file"
+            class="progress-bar progress-bar-striped bg-success progress-bar-animated"
+            role="progressbar"
+            style="width: 0"
+            aria-valuenow="0"
+            aria-valuemin="0"
+            aria-valuemax="100"
+        >0%</div>
+    </div>
+    <div class=" progress ">
+        <div
+            id="progressbar-all"
+            class="progress-bar progress-bar-striped bg-success progress-bar-animated"
+            role="progressbar"
+            style="width: 0"
+            aria-valuenow="0"
+            aria-valuemin="0"
+            aria-valuemax="100"
+        >0% [Datei 5 von 7]</div>
+    </div>
+    <div class="py-3 text-end">
         <button
+            data-sfw2-url="{{sfw2_routing.path}}?do=create"
+            data-sfw2-form-id="#{{sfw2_routing.path_simplified}}"
+            data-sfw2-inline="true"
             type="button"
-            class="btn btn-success btn-sm btnUpload noshow"
-            data-url="<?php echo($this->getCurrentPath()); ?>"
+            class="btn btn-secondary sfw2-btn-upload"
         >hochladen</button>
     </div>
 
+
+   {{!<a class="btnRemove noshow" href="#">x</a>}}
+{{!
     <div class="fileSelectDescr">
         Datei hier ablegen oder klicken zum Hochladen
     </div>
     <div class="currfile" ></div>
-
-</div>
-<div class="noshow progress mb-1 ">
-    <div
-        id="progressbar-file"
-        class="progress-bar progress-bar-striped bg-success progress-bar-animated"
-        role="progressbar"
-        style="width: 0"
-        aria-valuenow="0"
-        aria-valuemin="0"
-        aria-valuemax="100"
-    >0%</div>
-</div>
-<div class="noshow progress mb-4">
-    <div
-        id="progressbar-all"
-        class="progress-bar progress-bar-striped bg-success progress-bar-animated"
-        role="progressbar"
-        style="width: 0"
-        aria-valuenow="0"
-        aria-valuemin="0"
-        aria-valuemax="100"
-    >0% [Datei 5 von 7]</div>
+}}
 </div>
 {{/if}}
 <div class="d-flex flex-wrap">
     {{#each pics}}
-    <div class="p-1 ">
+    <div class="p-1" id="{{../sfw2_routing.path_simplified}}_recordset_{{../id}}__{{#identifier ttp}}">
         <a href="{{lnk}}" rel="lightbox-gallerie">
             <img class="" alt="" src="{{src}}" title="{{ttp}}" />
         </a>
-       {{!
-        <?php if($this->permission->createAllowed()): ?>}}
         <div class="mt-2">
+            {{#if ../update_allowed}}
             <button
+                title="als Vorschaubild auswählen"
                 type="button"
-                class="btn btn-danger btn-sm"
-                data-toggle="modal"
-                data-target="#deleteDialogModal"
-                data-url="<?php echo($this->getCurrentPath()); ?>"
-                data-item-id="<?php echo($this->id . '__' . $v['ttp']);?>"
-                data-form-id="<?php echo($this->getPathSimplified()); ?>"
-            >löschen</button>
+                class="btn btn-light btn-sm sfw2-button-send"
+                data-sfw2-url="{{../sfw2_routing.path}}?do=changePreview"
+                data-sfw2-item-id="{{../id}}__{{ttp}}"
+            ><i class="bi bi-person-video2"></i></button>
             <button
+                title="Bild drehen"
                 type="button"
-                class="btn btn-secondary btn-sm btnChangePreview"
-                data-url="<?php echo($this->getCurrentPath()); ?>"
-                data-item-id="<?php echo($this->id . '__' . $v['ttp']);?>"
-                data-form-id="<?php echo($this->getPathSimplified()); ?>"
-            >Vorschau</button>
+                class="btn btn-light btn-sm sfw2-button-send"
+                data-sfw2-url="{{../sfw2_routing.path}}?do=rotateImage"
+                data-sfw2-item-id="{{../id}}__{{ttp}}"
+            ><i class="bi bi-arrow-repeat"></i></button>
+            {{/if}}
+            {{#if ../delete_allowed}}
             <button
+                title="Bild löschen"
                 type="button"
-                class="btn btn-secondary btn-sm btnRotateImage"
-                data-url="<?php echo($this->getCurrentPath()); ?>"
-                data-item-id="<?php echo($this->id . '__' . $v['ttp']);?>"
-                data-form-id="<?php echo($this->getPathSimplified()); ?>"
-            >Drehen</button>
+                class="btn btn-light btn-sm sfw2-delete-button"
+                data-sfw2-url="{{../sfw2_routing.path}}?do=delete"
+                data-sfw2-item-id="{{../id}}__{{ttp}}"
+                data-sfw2-form-id="#{{../sfw2_routing.path_simplified}}"
+            ><i class="bi bi-trash"></i></button>
+            {{/if}}
         </div>
     </div>
     {{/each}}
