@@ -22,21 +22,23 @@
 
 namespace SFW2\Gallery\Controller;
 
-use DateTime;
-use DateTimeZone;
 use Exception;
 use Fig\Http\Message\StatusCodeInterface;
-use IntlDateFormatter;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
-use SFW2\Core\HttpExceptions\HttpForbidden;
+use SFW2\Core\HttpExceptions\HttpBadRequest;
 use SFW2\Core\HttpExceptions\HttpInternalServerError;
+use SFW2\Core\HttpExceptions\HttpNotFound;
 use SFW2\Core\HttpExceptions\HttpUnprocessableContent;
 use SFW2\Core\Utils\DateTimeHelper;
+use SFW2\Core\Permission\AccessType;
+use SFW2\Core\Permission\PermissionInterface;
+
 use SFW2\Database\DatabaseInterface;
+use SFW2\Gallery\Helper\ImageHelperTrait;
 use SFW2\Routing\AbstractController;
 
-use SFW2\Routing\HelperTraits\getPathTrait;
+use SFW2\Routing\HelperTraits\getRoutingDataTrait;
 use SFW2\Routing\ResponseEngine;
 use SFW2\Validator\Enumerations\DateCompareEnum;
 use SFW2\Validator\Ruleset;
@@ -44,24 +46,21 @@ use SFW2\Validator\Validator;
 use SFW2\Validator\Validators\IsNotEmpty;
 use SFW2\Validator\Validators\IsDate;
 
-use SFW2\Gallery\Helper\GalleryHelperTrait;
-
 class Newspaper extends AbstractController {
 
-    use getPathTrait;
-    use GalleryHelperTrait;
+    use getRoutingDataTrait;
+    use ImageHelperTrait;
 
     const SUMMERIES_PER_PAGE = 3;
     const DIMENSIONS = 600;
-
-    protected User $user;
 
     protected string $title;
     protected string $about;
 
     public function __construct(
         protected DatabaseInterface $database,
-        protected DateTimeHelper $dateTimeHelper
+        protected DateTimeHelper $dateTimeHelper,
+        private readonly PermissionInterface $permission
     ) {
     }
 
@@ -98,6 +97,8 @@ class Newspaper extends AbstractController {
         $content = [
             'title' => 'Pressemitteilungen', // FIXME: outsource this!
             'about' => 'Hier ein paar lesenswerte Zeitungsartikel über die Springer Singgemeinschaft',
+            'create_allowed' => $this->permission->checkPermission($pathId, 'create') !== AccessType::VORBIDDEN,
+            'delete_allowed' => $this->permission->checkPermission($pathId, 'delete') !== AccessType::VORBIDDEN,
             'items' => $entries
         ];
 
