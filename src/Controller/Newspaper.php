@@ -71,7 +71,7 @@ class Newspaper extends AbstractController {
 
         $stmt =
             "SELECT `Id`, `Title`, `Date`, `Source`, `FileName` " .
-            "FROM `{TABLE_PREFIX}_newspaperarticles` AS `article` " .
+            "FROM `{TABLE_PREFIX}_gallery_newspaperarticles` AS `article` " .
             "WHERE `article`.`PathId` = %s " .
             "ORDER BY `article`.`Date` DESC";
         $rows = $this->database->select($stmt, [$pathId]);
@@ -126,7 +126,7 @@ class Newspaper extends AbstractController {
             throw new HttpUnprocessableContent("invalid data given");
         }
 
-        $stmt = "SELECT `FileName` FROM `{TABLE_PREFIX}_newspaperarticles` ";
+        $stmt = "SELECT `FileName` FROM `{TABLE_PREFIX}_gallery_newspaperarticles` ";
         $where = "WHERE `Id` = %s AND `PathId` = %s' ";
         /*
         * if(!$all) {
@@ -151,7 +151,7 @@ class Newspaper extends AbstractController {
             throw new HttpInternalServerError("unable to delete file <$hight>");
         }
 
-        $stmt = "DELETE FROM `{TABLE_PREFIX}_newspaperarticles` " . $where;
+        $stmt = "DELETE FROM `{TABLE_PREFIX}_gallery_newspaperarticles` " . $where;
         $this->database->delete($stmt, [$entryId, $pathId]);
         return $responseEngine->render($request);
     }
@@ -193,13 +193,13 @@ class Newspaper extends AbstractController {
         $source = $values['source']['value'];
 
         $stmt =
-            "INSERT INTO `{TABLE_PREFIX}_newspaperarticles` " .
-            "SET `Date` = '%s', " .
-            "`Title` = '%s', " .
-            "`Source` = '%s', " .
-            "`UserId` = '%s', " .
-            "`PathId` = '%s', " .
-            "`FileName` = '%s'";
+            "INSERT INTO `{TABLE_PREFIX}_gallery_newspaperarticles` " .
+            "SET `Date` = %s, " .
+            "`Title` = %s, " .
+            "`Source` = %s, " .
+            "`UserId` = %s, " .
+            "`PathId` = %s, " .
+            "`FileName` = %s";
 
         $this->database->insert(
             $stmt,
