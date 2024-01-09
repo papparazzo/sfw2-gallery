@@ -65,11 +65,15 @@ class Newspaper extends AbstractController {
     ) {
     }
 
+    /**
+     * @throws HttpNotFound
+     * @throws Exception
+     */
     public function index(Request $request, ResponseEngine $responseEngine): Response
     {
         $pathId = $this->getPathId($request);
 
-        $stmt =
+        $stmt = /** @lang MySQL */
             "SELECT `Id`, `Title`, `Date`, `Source`, `FileName` " .
             "FROM `{TABLE_PREFIX}_gallery_newspaperarticles` AS `article` " .
             "WHERE `article`.`PathId` = %s " .
@@ -79,10 +83,9 @@ class Newspaper extends AbstractController {
         $entries = [];
 
         foreach($rows as $row) {
-            $cd = $this->getShortDate($row['Date']);
             $entry = [];
             $entry['id'         ] = $row['Id'];
-            $entry['date'       ] = $cd;
+            $entry['date'       ] = $this->dateTimeHelper->getDate(DateTimeHelper::FULL_DATE, $row['Date']);
             $entry['title'      ] = $row['Title'];
             $entry['image'      ] = $this->getImageFile($row['FileName'], $pathId, false);
             $entry['preview'    ] = $this->getImageFile($row['FileName'], $pathId, true);
@@ -115,9 +118,10 @@ class Newspaper extends AbstractController {
 
     /**
      * @noinspection PhpMissingParentCallCommonInspection
-     * @throws HttpForbidden
      * @throws HttpUnprocessableContent
+     * @throws HttpNotFound
      * @throws HttpInternalServerError
+     * @throws HttpBadRequest
      */
     public function delete(Request $request, ResponseEngine $responseEngine): Response
     {
@@ -138,7 +142,7 @@ class Newspaper extends AbstractController {
         $row = $this->database->selectRow($stmt . $where, [$entryId, $pathId]);
 
         if(empty($row)) {
-            throw new HttpForbidden("no entry <$entryId> found");
+            throw new HttpBadRequest("no entry <$entryId> found");
         }
 
         $preview = $this->getImageFile($row['FileName'], $pathId, true);
@@ -156,7 +160,11 @@ class Newspaper extends AbstractController {
         return $responseEngine->render($request);
     }
 
-    /** @noinspection PhpMissingParentCallCommonInspection */
+    /**
+     * @noinspection PhpMissingParentCallCommonInspection
+     * @throws HttpNotFound
+     * @throws Exception
+     */
     public function create(Request $request, ResponseEngine $responseEngine): Response
     {
         $validateOnly = filter_input(INPUT_POST, 'validateOnly', FILTER_VALIDATE_BOOLEAN);
@@ -179,9 +187,7 @@ class Newspaper extends AbstractController {
         }
 
         if($validateOnly) {
-            return
-                $responseEngine->
-                render($request, ['sfw2_payload' => $values]);
+            return $responseEngine->render($request, ['sfw2_payload' => $values]);
         }
 
         $pathId = $this->getPathId($request);
@@ -208,37 +214,5 @@ class Newspaper extends AbstractController {
             ]
         );
         return $responseEngine->render($request);
-    }
-
-    protected function getLastModificatonDate() : string {
-        $stmt =
-            "SELECT `newspaperarticles`.`Date` FROM `{TABLE_PREFIX}_newspaperarticles` AS `newspaperarticles` " .
-            "WHERE `newspaperarticles`.`PathId` = '%s' " .
-            "ORDER BY `newspaperarticles`.`Date`";
-
-        return (string)$this->database->selectSingle($stmt, [$this->pathId]);
-    }
-
-    // TODO: Make this a trait
-    /**
-     * @throws Exception
-     * @deprecated
-     */
-    protected function getShortDate($date = 'now', string $dateTimeZone = 'Europe/Berlin'): bool|string
-    {
-        if($date === null) {
-            return '';
-        }
-
-         $local_date = IntlDateFormatter::create(
-            'de',
-            IntlDateFormatter::LONG,
-            IntlDateFormatter::NONE,
-            $dateTimeZone,
-            null,
-            null
-        );
-
-        return $local_date->format(new DateTime($date, new DateTimeZone($dateTimeZone)));
     }
 }
