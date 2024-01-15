@@ -110,11 +110,7 @@ class Gallery extends AbstractController {
             'delete_allowed' => $this->permission->checkPermission($pathId, 'delete') !== AccessType::VORBIDDEN,
         ];
 
-        return $responseEngine->render(
-            $request,
-            $content,
-            "SFW2\\Gallery\\Summary",
-        );
+        return $responseEngine->render($request, $content, "SFW2\\Gallery\\Summary");
     }
 
     /**
