@@ -132,7 +132,7 @@ class Newspaper extends AbstractController {
         }
 
         $stmt = "SELECT `FileName` FROM `{TABLE_PREFIX}_gallery_newspaperarticles` ";
-        $where = "WHERE `Id` = %s AND `PathId` = %s' ";
+        $where = "WHERE `Id` = %s AND `PathId` = %s ";
         /*
         * if(!$all) {
         * $where .= "AND `UserId` = '" . $this->database->escape($this->user->getUserId()) . "'";
