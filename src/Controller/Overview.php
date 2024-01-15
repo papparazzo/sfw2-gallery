@@ -22,98 +22,95 @@
 
 namespace SFW2\Gallery\Controller;
 
+use Exception;
+use Psr\Http\Message\ResponseInterface as Response;
+use Psr\Http\Message\ServerRequestInterface as Request;
+use SFW2\Core\HttpExceptions\HttpInternalServerError;
+use SFW2\Core\HttpExceptions\HttpNotFound;
+use SFW2\Core\HttpExceptions\HttpUnprocessableContent;
+use SFW2\Database\Database;
+use SFW2\Database\DatabaseException;
+use SFW2\Gallery\Helper\ImageHelperTrait;
 use SFW2\Routing\AbstractController;
 use SFW2\Controllers\Widget\Obfuscator\EMail;
 use SFW2\Authority\User;
+use SFW2\Routing\HelperTraits\getRoutingDataTrait;
+use SFW2\Routing\ResponseEngine;
 use SFW2\Routing\Result\Content;
 
 use SFW2\Routing\Resolver\ResolverException;
 
-use SFW2\Core\Database;
 use SFW2\Core\Config;
 
 use SFW2\Validator\Ruleset;
 use SFW2\Validator\Validator;
 use SFW2\Validator\Validators\IsNotEmpty;
 
-use SFW2\Gallery\Helper\GalleryHelperTrait;
-
-use SFW2\Controllers\Controller\Helper\DateTimeHelperTrait;
-use SFW2\Controllers\Controller\Helper\ImageHelperTrait;
-use SFW2\Controllers\Controller\Helper\EMailHelperTrait;
-
 class Overview extends AbstractController {
 
-    use DateTimeHelperTrait;
+    use getRoutingDataTrait;
     use ImageHelperTrait;
-    use EMailHelperTrait;
-    use GalleryHelperTrait;
 
     const SUMMERIES_PER_PAGE = 3;
     const DIMENSIONS = 300;
 
-    protected Database $database;
-    protected Config $config;
-    protected User $user;
     protected string $title;
     protected string $about;
 
-    public function __construct(int $pathId, Database $database, Config $config, User $user, string $title = '', string $about = '') {
-        parent::__construct($pathId);
-        $this->database = $database;
-        $this->config = $config;
-        $this->user = $user;
-        $this->title = $title;
-        $this->about = $about;
+    public function __construct(
+        private readonly Database $database/*, string $title = '', string $about = ''*/
+    )
+    {
+      #  $this->title = $title;
+      #  $this->about = $about;
     }
 
-    public function index(bool $all = false) : Content {
-        unset($all);
-        $content = new Content('SFW2\\Gallery\\Overview');
+    public function index(Request $request, ResponseEngine $responseEngine): Response
+    {
+        $content = [
+            'title' => $this->title,
+            'about' =>$this->about,
+            'modificationDate' =>$this->getLastModificatonDate(),
+            #'webmaster' =>(string)(new EMail($this->config->getVal('project', 'eMailWebMaster'))),
+        ];
 
-        $content->assign('title', $this->title);
-        $content->assign('about', $this->about);
-        $content->assign('modificationDate', $this->getLastModificatonDate());
-        $content->assign('webmaster', (string)(new EMail($this->config->getVal('project', 'eMailWebMaster'))));
+        #$content->appendJSFile('Overview.handlebars.js');
+        #$content->appendCSSFile('lightbox.min.css');
+        #$content->appendJSFile('lightbox.min.js');
 
-        $content->appendJSFile('Overview.handlebars.js');
-        $content->appendCSSFile('lightbox.min.css');
-        $content->appendJSFile('lightbox.min.js');
+        return $responseEngine->render($request, $content, "SFW2\\Gallery\\Overview");
 
-        return $content;
     }
 
-    public function read(bool $all = false) : Content {
+    public function read(Request $request, ResponseEngine $responseEngine): Response
+    {
         $count = (int)filter_input(INPUT_GET, 'count', FILTER_VALIDATE_INT);
         $start = (int)filter_input(INPUT_GET, 'offset', FILTER_VALIDATE_INT);
 
         $count = $count ?: self::SUMMERIES_PER_PAGE;
 
-        $stmt =
+        $stmt = /** @lang MySQL */
             "SELECT `overview`.`Id`, `overview`.`Title`, `overview`.`Description`, `overview`.`Date`, " .
-            "`overview`.`FileName`, `user`.`Email`, CONCAT(`user`.`FirstName`, ' ', `user`.`LastName`) AS `Creator`, " .
-            "IF(`overview`.`UserId` = '%s', '1', '0') AS `OwnEntry`, `overview`.`Names` " .
-            "FROM `{TABLE_PREFIX}_overview` AS `overview` " .
-            "LEFT JOIN `{TABLE_PREFIX}_user` AS `user` " .
-            "ON `user`.`Id` = `overview`.`UserId` " .
-            "WHERE `overview`.`PathId` = '%s' ";
+            "`overview`.`FileName`, " .
+            "IF(`overview`.`UserId` = %s, '1', '0') AS `OwnEntry`, `overview`.`Names` " .
+            "FROM `{TABLE_PREFIX}_gallery_overview` AS `overview` " .
+            "WHERE `overview`.`PathId` = %s ";
 
         if($all) {
             $stmt .=
                 "ORDER BY `overview`.`Pos` DESC " .
                 "LIMIT %s, %s ";
             $rows = $this->database->select($stmt, [$this->user->getUserId(), $this->pathId, $start, $count]);
-            $cnt = $this->database->selectCount('{TABLE_PREFIX}_overview', "WHERE `PathId` = '%s'", [$this->pathId]);
+            $cnt = $this->database->selectCount('{TABLE_PREFIX}_overview', "WHERE `PathId` = %s", [$this->pathId]);
         } else {
             $stmt .=
-                "AND `UserId` = '%s' " .
+                "AND `UserId` = %s " .
                 "ORDER BY `overview`.`Pos` DESC " .
                 "LIMIT %s, %s ";
             $rows = $this->database->select($stmt, [$this->user->getUserId(), $this->pathId, $this->user->getUserId(), $start, $count]);
-            $cnt = $this->database->selectCount('{TABLE_PREFIX}_overview', "WHERE `PathId` = '%s' AND `UserId` = '%s'", [$this->pathId, $this->user->getUserId()]);
+            $cnt = $this->database->selectCount('{TABLE_PREFIX}_overview', "WHERE `PathId` = %s AND `UserId` = %s", [$this->pathId, $this->user->getUserId()]);
         }
 
-        $content = new Content('Overview');
         $entries = [];
 
         foreach($rows as $row) {
@@ -130,49 +127,67 @@ class Overview extends AbstractController {
 
             $entries[] = $entry;
         }
+        $content = [
+            'offset' => $start + $count,
+            'hasNext' =>  $start + $count < $cnt,
+            'entries' => $entries,
 
-        $content->assign('offset', $start + $count);
-        $content->assign('hasNext', $start + $count < $cnt);
-        $content->assign('entries', $entries);
-        return $content;
+        ];
+        return $responseEngine->render($request, $content, "SFW2\\Gallery\\Overview");
     }
 
-    public function delete(bool $all = false) : Content {
+    /**
+     * @throws HttpUnprocessableContent
+     * @throws DatabaseException
+     * @throws HttpNotFound
+     * @throws HttpInternalServerError
+     */
+    public function delete(Request $request, ResponseEngine $responseEngine): Response
+    {
         $entryId = filter_input(INPUT_POST, 'id', FILTER_VALIDATE_INT);
         if($entryId === false) {
-            throw new ResolverException("invalid data given", ResolverException::INVALID_DATA_GIVEN);
+            throw new HttpUnprocessableContent("invalid data given");
         }
+
+        $pathId = $this->getPathId($request);
 
         $stmt = "SELECT `FileName` FROM `{TABLE_PREFIX}_overview` ";
-        $where = "WHERE `Id` = '%s' AND `PathId` = '%s' ";
+        $where = "WHERE `Id` = %s AND `PathId` = %s ";
 
-        if(!$all) {
-            $where .= "AND `UserId` = '" . $this->database->escape($this->user->getUserId()) . "'";
-        }
+        #if(!$all) {
+        #    $where .= "AND `UserId` = '" . $this->database->escape($this->user->getUserId()) . "'";
+        #}
 
-        $row = $this->database->selectRow($stmt . $where, [$entryId, $this->pathId]);
+        $row = $this->database->selectRow($stmt . $where, [$entryId, $pathId]);
 
         if(empty($row)) {
-            throw new ResolverException("no entry <$entryId> found", ResolverException::NO_PERMISSION);
+            throw new HttpNotFound("no entry <$entryId> found");
         }
 
-        $preview = $this->getImageFile($row['FileName'], true);
+        $preview = $this->getImageFile($row['FileName'], $pathId, true);
         if(!unlink(ltrim($preview, DIRECTORY_SEPARATOR))) {
-            throw new ResolverException("unable to delete file <$preview>", ResolverException::UNKNOWN_ERROR);
+            throw new HttpInternalServerError("unable to delete file <$preview>");
         }
 
-        $hight = $this->getImageFile($row['FileName'], false);
+        $hight = $this->getImageFile($row['FileName'], $pathId, false);
         if(!unlink(ltrim($hight, DIRECTORY_SEPARATOR))) {
-            throw new ResolverException("unable to delete file <$hight>", ResolverException::UNKNOWN_ERROR);
+            throw new HttpInternalServerError("unable to delete file <$hight>");
         }
 
         $stmt = "DELETE FROM `{TABLE_PREFIX}_newspaperarticles` " . $where;
-        $this->database->delete($stmt, [$entryId, $this->pathId]);
-        return new Content();
+        $this->database->delete($stmt, [$entryId, $pathId]);
+         return $responseEngine->render($request);
     }
 
-    public function create(): Content {
+    /**
+     * @throws HttpNotFound
+     * @throws Exception
+     */
+    public function create(Request $request, ResponseEngine $responseEngine): Response
+    {
         $content = new Content('Overview');
+
+        $pathId = $this->getPathId($request);
 
         $validateOnly = filter_input(INPUT_POST, 'validateOnly', FILTER_VALIDATE_BOOLEAN);
 
@@ -195,39 +210,39 @@ class Overview extends AbstractController {
             return $content;
         }
 
-        $folder = $this->getGalleryPath();
+        $folder = $this->getGalleryPath($pathId);
         $fileName = $this->addFile($folder, self::DIMENSIONS);
 
         $stmt =
             "INSERT INTO `{TABLE_PREFIX}_overview` " .
             "SET `Date` = NOW(), " .
-            "`Title` = '%s', " .
+            "`Title` = %s, " .
             "`Pos` = '0', " .
-            "`UserId` = '%s', " .
-            "`PathId` = '%s', ".
-            "`Description` = '%s', " .
-            "`Names` = '%s', " .
-            "`FileName` = '%s' ";
+            "`UserId` = %s, " .
+            "`PathId` = %s, ".
+            "`Description` = %s, " .
+            "`Names` = %s, " .
+            "`FileName` = %s ";
 
         $id = $this->database->insert(
             $stmt,
             [
                 $values['title']['value'],
                 $this->user->getUserId(),
-                $this->pathId,
+                $pathId,
                 $values['description']['value'],
                 $values['names']['value'],
                 $fileName
             ]
         );
-        return $content;
+                return $responseEngine->render($request, $content, "SFW2\\Gallery\\Overview");
     }
 
     protected function getLastModificatonDate(): string {
-        $stmt =
+        $stmt = /** @lang MySQL */
             "SELECT `overview`.`Date` " .
             "FROM `{TABLE_PREFIX}_overview` AS `overview` " .
-            "WHERE `overview`.`PathId` = '%s' " .
+            "WHERE `overview`.`PathId` = %s " .
             "ORDER BY `overview`.`Date`";
 
         return (string)$this->database->selectSingle($stmt, [$this->pathId]);
