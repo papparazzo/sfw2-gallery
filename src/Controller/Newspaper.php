@@ -104,17 +104,9 @@ class Newspaper extends AbstractController {
 
         /*
         $content->assign('webmaster', (string)(new EMail($this->config->getVal('project', 'eMailWebMaster'))));
-
-        $content->appendJSFile('Newspaper.handlebars.js');
-        $content->appendCSSFile('lightbox.min.css');
-        $content->appendJSFile('lightbox.min.js');
         */
 
-        return $responseEngine->render(
-            $request,
-            $content,
-            "SFW2\\Gallery\\Newspaper"
-        );
+        return $responseEngine->render($request, $content, "SFW2\\Gallery\\Newspaper");
     }
 
     /**
