@@ -132,3 +132,8 @@
     </div>
     {{/each}}
 </div>
+{{#unless items}}
+<div class="alert alert-info pt-3" role="alert">
+    <strong>Anmerkung:</strong><p>Aktuell liegen keine Artikel vor!</p>
+</div>
+{{/unless}}
