@@ -98,7 +98,7 @@
         </div>
         <div class="  mb-1 ">
             <div style="height: 10px" class="progress" role="progressbar" aria-label="Success example" aria-valuenow="25" aria-valuemin="0" aria-valuemax="100">
-                <div class="progress-bar progress-bar-striped bg-success progress-bar-animated" style="width: 0"></div>
+                <div id="sfw2-progress-bar" class="progress-bar progress-bar-striped bg-success progress-bar-animated" style="width: 0"></div>
             </div>
         </div>
     </form>
@@ -115,11 +115,11 @@
         <small style="font-style: italic;">
             Erstellt am <time pubdate="pubdate">{{date}}</time>;
             Quelle: {{source}}
-            {{#if ../deleteAllowed}}
-            <input type="hidden" id="{{formid}}_title_{{id}}" value="{{title}} vom {{date}}" />
+            {{#if ../delete_allowed}}
+            <input type="hidden" id="{{../sfw2_routing.path_simplified}}_title_{{id}}" value="{{title}} vom {{date}}" />
             <button
                 type="button"
-                class="btn btn-sm btn-light ml-4 sfw2-delete-button"
+                class="btn btn-sm btn-secondary ms-3 ml-4 sfw2-delete-button"
                 data-sfw2-url="{{../sfw2_routing.path}}?do=delete"
                 data-sfw2-item-id="{{id}}"
                 data-sfw2-form-id="#{{../sfw2_routing.path_simplified}}"
