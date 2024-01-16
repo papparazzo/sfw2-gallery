@@ -29,7 +29,9 @@
         "sfw2/core": "^5.0",
         "sfw2/database": "^3.0",
         "sfw2/validator": "^6.0",
-        "sfw2/routing": "^7.0"
+        "sfw2/routing": "^7.0",
+
+        "psr/http-message": "^2.0"
     },
     "autoload": {
         "psr-4": {
