@@ -45,42 +45,44 @@
 <input id="curpage" type="hidden" value="{{page}}" />
 <div class="sfw2-dropzone mb-4 pt-5 px-5">
     <div class="mb-3">
-    <label for="formFileMultiple" class="form-label">Hier die Bilder auswählen</label>
+    <label for="{{sfw2_routing.path_simplified}}" class="form-label">Hier die Bilder auswählen</label>
         <input
             class="form-control sfw2-file-select-upload"
             type="file"
             name="file"
             data-onlyimage="true"
             accept="image/jpeg,image/png,image/gif,image/bmp,image/webp,image/tiff"
-            id="formFileMultiple" multiple
+            id="{{sfw2_routing.path_simplified}}"
+            multiple
         >
     </div>
     <div class=" progress mb-1 ">
         <div
-            id="progressbar-file"
+            id="sfw2-progress-bar"
             class="progress-bar progress-bar-striped bg-success progress-bar-animated"
             role="progressbar"
             style="width: 0"
             aria-valuenow="0"
             aria-valuemin="0"
             aria-valuemax="100"
-        >0%</div>
+        ></div>
     </div>
     <div class=" progress ">
         <div
-            id="progressbar-all"
+            id="sfw2-progress-bar-total"
             class="progress-bar progress-bar-striped bg-success progress-bar-animated"
             role="progressbar"
             style="width: 0"
             aria-valuenow="0"
             aria-valuemin="0"
             aria-valuemax="100"
-        >0% [Datei 5 von 7]</div>
+        >[Datei 5 von 7]</div>
     </div>
     <div class="py-3 text-end">
         <button
-            data-sfw2-url="{{sfw2_routing.path}}?do=create"
+            data-sfw2-url="{{sfw2_routing.path}}?do=addImage"
             data-sfw2-form-id="#{{sfw2_routing.path_simplified}}"
+            data-sfw2-gallery-id="{{id}}"
             data-sfw2-inline="true"
             type="button"
             class="btn btn-secondary sfw2-btn-upload"
