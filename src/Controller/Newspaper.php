@@ -51,7 +51,6 @@ class Newspaper extends AbstractController {
     use getRoutingDataTrait;
     use ImageHelperTrait;
 
-    const SUMMERIES_PER_PAGE = 3;
     const DIMENSIONS = 600;
 
     protected string $title;
