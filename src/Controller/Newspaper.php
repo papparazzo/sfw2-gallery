@@ -84,7 +84,7 @@ class Newspaper extends AbstractController {
         foreach($rows as $row) {
             $entry = [];
             $entry['id'         ] = $row['Id'];
-            $entry['date'       ] = $this->dateTimeHelper->getDate(DateTimeHelper::FULL_DATE, $row['Date']);
+            $entry['date'       ] = $this->getDate($row['Date']);
             $entry['title'      ] = $row['Title'];
             $entry['image'      ] = $this->getImageFile($row['FileName'], $pathId, false);
             $entry['preview'    ] = $this->getImageFile($row['FileName'], $pathId, true);
@@ -207,5 +207,16 @@ class Newspaper extends AbstractController {
             ]
         );
         return $responseEngine->render($request);
+    }
+
+    /**
+     * @throws Exception
+     */
+    private function getDate(?string $date): string
+    {
+        if(is_null($date)) {
+            return "unbekannt";
+        }
+        return $this->dateTimeHelper->getDate(DateTimeHelper::FULL_DATE, $date);
     }
 }
