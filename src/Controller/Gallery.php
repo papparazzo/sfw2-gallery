@@ -32,7 +32,9 @@ use SFW2\Core\HttpExceptions\HttpUnprocessableContent;
 use SFW2\Core\Permission\AccessType;
 use SFW2\Core\Permission\PermissionInterface;
 use SFW2\Core\Utils\DateTimeHelper;
+use SFW2\Database\DatabaseException;
 use SFW2\Database\DatabaseInterface;
+use SFW2\Database\QueryHelper;
 use SFW2\Gallery\Helper\ImageHelperTrait;
 use SFW2\Routing\AbstractController;
 
@@ -165,6 +167,8 @@ class Gallery extends AbstractController {
 
     /**
      * @noinspection PhpMissingParentCallCommonInspection
+     * @throws DatabaseException
+     * @throws HttpNotFound
      */
     public function create(Request $request, ResponseEngine $responseEngine): Response
     {
@@ -205,6 +209,7 @@ class Gallery extends AbstractController {
      * @noinspection PhpMissingParentCallCommonInspection
      * @throws HttpBadRequest
      * @throws HttpNotFound
+     * @throws DatabaseException
      */
     public function delete(Request $request, ResponseEngine $responseEngine): Response
     {
@@ -284,6 +289,7 @@ class Gallery extends AbstractController {
 
     /**
      * @throws HttpNotFound
+     * @throws DatabaseException
      */
     protected function deleteGallery(int $pathId, int $galleryId, bool $all = false): void
     {
@@ -329,6 +335,7 @@ class Gallery extends AbstractController {
 
     /**
      * @throws HttpNotFound
+     * @throws DatabaseException
      */
     protected function deleteImage(int $pathId, int $galleryId, string $fileName, bool $all = false): void {
         $stmt =
@@ -412,6 +419,9 @@ class Gallery extends AbstractController {
         imagedestroy($old);
     }
 
+    /**
+     * @throws DatabaseException
+     */
     protected function getLastModificatonDate(int $pathId) {
         $stmt =
             "SELECT `imagegalleries`.`CreationDate` FROM `{TABLE_PREFIX}_gallery_imagegalleries` AS `imagegalleries` " .
