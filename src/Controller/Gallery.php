@@ -44,15 +44,12 @@ use SFW2\Validator\Ruleset;
 use SFW2\Validator\Validator;
 use SFW2\Validator\Validators\IsNotEmpty;
 
-class Gallery extends AbstractController {
+final class Gallery extends AbstractController {
 
     use getRoutingDataTrait;
 
     use ImageHelperTrait;
 
-    protected ?string $title;
-
-    const SUMMERIES_PER_PAGE = 3;
     const PREVIEW_FILE = 'preview.png';
     const PREVIEW_FILE_BIG = 'previewb.png';
     const DIMENSIONS = 130;
@@ -62,12 +59,7 @@ class Gallery extends AbstractController {
         private readonly DatabaseInterface   $database,
         private readonly DateTimeHelper      $dateTimeHelper,
         private readonly PermissionInterface $permission
-        /*
-     User $user, string $title = null*/) {
-       /*
-        $this->user = $user;
-        $this->title = $title;
-       */
+    ) {
     }
 
     /**
