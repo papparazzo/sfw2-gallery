@@ -55,11 +55,14 @@ final class Gallery extends AbstractController {
     const DIMENSIONS = 130;
     const DIMENSIONS_BIG = 270;
 
+    private QueryHelper $queryHelper;
+
     public function __construct(
         private readonly DatabaseInterface   $database,
         private readonly DateTimeHelper      $dateTimeHelper,
         private readonly PermissionInterface $permission
     ) {
+        $this->queryHelper = new QueryHelper($this->database);
     }
 
     /**
@@ -127,7 +130,7 @@ final class Gallery extends AbstractController {
             "FROM `{TABLE_PREFIX}_gallery_imagegalleries` AS `imagegalleries` " .
             "WHERE `imagegalleries`.`Id` = %s ";
 
-        $row = $this->database->selectRow($stmt, [$id]);
+        $row = $this->queryHelper->selectRow($stmt, [$id]);
 
         if(empty($row)) {
             throw new HttpBadRequest("no gallery found for id <$id>!");
@@ -338,7 +341,7 @@ final class Gallery extends AbstractController {
         #    $stmt .= "AND `UserId` = '" . $this->database->escape($this->user->getUserId()) . "'";
         #}
 
-        $row = $this->database->selectRow($stmt, [$galleryId, $pathId]);
+        $row = $this->queryHelper->selectRow($stmt, [$galleryId, $pathId]);
 
         if(empty($row)) {
             throw new HttpNotFound("no entry found for id <$galleryId>");
@@ -420,6 +423,6 @@ final class Gallery extends AbstractController {
             "WHERE `imagegalleries`.`PathId` = %s " .
             "ORDER BY `imagegalleries`.`CreationDate`";
 
-        return $this->database->selectSingle($stmt, [$pathId]);
+        return $this->queryHelper->selectSingle($stmt, [$pathId]);
     }
 }
