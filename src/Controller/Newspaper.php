@@ -94,11 +94,11 @@ class Newspaper extends AbstractController {
         }
 
         $content = [
-            'title' => 'Pressemitteilungen', // FIXME: outsource this!
-            'about' => 'Hier ein paar lesenswerte Zeitungsartikel über die Springer Singgemeinschaft',
+            'title'          => $this->title,
+            'about'          => $this->about,
             'create_allowed' => $this->permission->checkPermission($pathId, 'create') !== AccessType::VORBIDDEN,
             'delete_allowed' => $this->permission->checkPermission($pathId, 'delete') !== AccessType::VORBIDDEN,
-            'items' => $entries
+            'items'          => $entries
         ];
 
         /*
@@ -114,6 +114,7 @@ class Newspaper extends AbstractController {
      * @throws HttpNotFound
      * @throws HttpInternalServerError
      * @throws HttpBadRequest
+     * @throws DatabaseException
      */
     public function delete(Request $request, ResponseEngine $responseEngine): Response
     {
@@ -131,7 +132,8 @@ class Newspaper extends AbstractController {
         */
         $pathId = $this->getPathId($request);
 
-        $row = $this->database->selectRow($stmt . $where, [$entryId, $pathId]);
+        $queryHelper = new QueryHelper($this->database);
+        $row = $queryHelper->selectRow($stmt . $where, [$entryId, $pathId]);
 
         if(empty($row)) {
             throw new HttpBadRequest("no entry <$entryId> found");
