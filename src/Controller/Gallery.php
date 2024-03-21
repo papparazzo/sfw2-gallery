@@ -44,7 +44,8 @@ use SFW2\Validator\Ruleset;
 use SFW2\Validator\Validator;
 use SFW2\Validator\Validators\IsNotEmpty;
 
-final class Gallery extends AbstractController {
+final class Gallery extends AbstractController
+{
 
     use getRoutingDataTrait;
 
@@ -61,7 +62,8 @@ final class Gallery extends AbstractController {
         private readonly DatabaseInterface   $database,
         private readonly DateTimeHelper      $dateTimeHelper,
         private readonly PermissionInterface $permission
-    ) {
+    )
+    {
         $this->queryHelper = new QueryHelper($this->database);
     }
 
@@ -84,7 +86,7 @@ final class Gallery extends AbstractController {
 
         $deleteAllowed = $this->permission->checkPermission($pathId, 'delete');
 
-        foreach($rows as $row) {
+        foreach ($rows as $row) {
             $entry = [];
             $entry['id'               ] = $row['Id'];
             $entry['date'             ] = $this->dateTimeHelper->getDate(DateTimeHelper::FULL_DATE, $row['CreationDate']);
@@ -120,7 +122,7 @@ final class Gallery extends AbstractController {
         $pathId = $this->getPathId($request);
 
         $id = (int)filter_input(INPUT_GET, 'id', FILTER_VALIDATE_INT);
-        if(!$id) {
+        if (!$id) {
             throw new HttpUnprocessableContent("no gallery fetched!");
         }
         $page = (int)filter_input(INPUT_GET, 'page', FILTER_VALIDATE_INT);
@@ -132,12 +134,12 @@ final class Gallery extends AbstractController {
 
         $row = $this->queryHelper->selectRow($stmt, [$id]);
 
-        if(empty($row)) {
+        if (empty($row)) {
             throw new HttpBadRequest("no gallery found for id <$id>!");
         }
         $path = $this->getGalleryPath($pathId, $id);
         $pics = [];
-        if(is_dir($path . '/thumb/')) {
+        if (is_dir($path . '/thumb/')) {
             $pics = $this->getImageList($path);
         }
 
@@ -176,7 +178,7 @@ final class Gallery extends AbstractController {
 
         $error = $validator->validate($_POST, $values);
 
-        if(!$error) {
+        if (!$error) {
             return
                 $responseEngine->
                 render($request, ['sfw2_payload' => $values])->
@@ -212,12 +214,12 @@ final class Gallery extends AbstractController {
 
         $pathId = $this->getPathId($request);
         $id = htmlspecialchars($_POST['id']);
-        if(!$id) {
+        if (!$id) {
             throw new HttpBadRequest("invalid entry-id given");
         }
 
         $tokens = explode('__', $id);
-        if(count($tokens) == 1) {
+        if (count($tokens) == 1) {
             $this->deleteGallery($pathId, $tokens[0], $all);
         } else {
             $this->deleteImage($pathId, array_shift($tokens), implode('__', $tokens), $all);
@@ -234,7 +236,7 @@ final class Gallery extends AbstractController {
     {
         $id = htmlspecialchars($_POST['id']);
         $p = strpos($id, '__');
-        if($p === false) {
+        if ($p === false) {
             throw new HttpUnprocessableContent();
         }
         $pathId = $this->getPathId($request);
