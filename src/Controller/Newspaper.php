@@ -46,7 +46,7 @@ use SFW2\Validator\Validator;
 use SFW2\Validator\Validators\IsNotEmpty;
 use SFW2\Validator\Validators\IsDate;
 
-class Newspaper extends AbstractController {
+final class Newspaper extends AbstractController {
 
     use getRoutingDataTrait;
     use ImageHelperTrait;
