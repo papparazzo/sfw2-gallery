@@ -272,13 +272,14 @@ final class Gallery extends AbstractController
         return $responseEngine->render($request);
     }
 
-    protected function getPreviewImage(int $pathId, int $id = 0, string $previewFile = self::PREVIEW_FILE): string {
-        if($id == 0) {
+    protected function getPreviewImage(int $pathId, int $id = 0, string $previewFile = self::PREVIEW_FILE): string
+    {
+        if ($id == 0) {
             return "/img/layout/empty.png";
         }
         $preview = $this->getGalleryPath($pathId, $id) . $previewFile;
 
-        if(!is_file($preview)) {
+        if (!is_file($preview)) {
             return "/img/layout/empty.png";
         }
         return '/' . $preview;
@@ -296,13 +297,13 @@ final class Gallery extends AbstractController
         #    $stmt .= "AND `UserId` = '" . $this->database->escape($this->user->getUserId()) . "'";
         #}
 
-        if(!$this->database->delete($stmt, [$galleryId, $pathId])) {
+        if (!$this->database->delete($stmt, [$galleryId, $pathId])) {
             throw new HttpNotFound("no entry found for id <$galleryId>");
         }
 
         $path = $this->getGalleryPath($pathId, $galleryId);
-        if(!is_dir($path . '/thumb/')) {
-            if(is_dir($path)) {
+        if (!is_dir($path . '/thumb/')) {
+            if (is_dir($path)) {
                 rmdir($path);
             }
             return;
@@ -311,8 +312,8 @@ final class Gallery extends AbstractController
         $dir = dir($path . '/thumb/');
 
         /** @noinspection PhpAssignmentInConditionInspection */
-        while(false !== ($entry = $dir->read())) {
-            if($entry == '.' || $entry == '..') {
+        while (false !== ($entry = $dir->read())) {
+            if ($entry == '.' || $entry == '..') {
                 continue;
             }
 
@@ -320,7 +321,7 @@ final class Gallery extends AbstractController
             unlink($path . '/high/' . $entry);
         }
         $dir->close();
-        if(is_file($path . '/' . self::PREVIEW_FILE)) {
+        if (is_file($path . '/' . self::PREVIEW_FILE)) {
             unlink($path . '/' . self::PREVIEW_FILE);
             unlink($path . '/' . self::PREVIEW_FILE_BIG);
         }
@@ -334,7 +335,8 @@ final class Gallery extends AbstractController
      * @throws HttpNotFound
      * @throws DatabaseException
      */
-    protected function deleteImage(int $pathId, int $galleryId, string $fileName, bool $all = false): void {
+    protected function deleteImage(int $pathId, int $galleryId, string $fileName, bool $all = false): void
+    {
         $stmt =
             "SELECT `imagegalleries`.`Id` FROM `{TABLE_PREFIX}_gallery_imagegalleries` AS `imagegalleries` " .
             "WHERE `imagegalleries`.`Id` = %s AND `imagegalleries`.`PathId` = %s ";
@@ -345,7 +347,7 @@ final class Gallery extends AbstractController
 
         $row = $this->queryHelper->selectRow($stmt, [$galleryId, $pathId]);
 
-        if(empty($row)) {
+        if (empty($row)) {
             throw new HttpNotFound("no entry found for id <$galleryId>");
         }
 
@@ -371,7 +373,7 @@ final class Gallery extends AbstractController
 
         $highFolder = $folder . DIRECTORY_SEPARATOR . 'high' . DIRECTORY_SEPARATOR;
 
-        if(!is_file($folder . self::PREVIEW_FILE)) {
+        if (!is_file($folder . self::PREVIEW_FILE)) {
             $this->generatePreview($filename, self::DIMENSIONS, $highFolder, $folder . '/' . self::PREVIEW_FILE);
             $this->generatePreview($filename, self::DIMENSIONS_BIG, $highFolder, $folder . '/' . self::PREVIEW_FILE_BIG);
         }
@@ -382,17 +384,18 @@ final class Gallery extends AbstractController
     /**
      * @throws \Exception
      */
-    protected function generatePreview(string $file, int $dimensions, string $src, string $des): void {
+    protected function generatePreview(string $file, int $dimensions, string $src, string $des): void
+    {
         $srcFile = $src . '/' . $file;
 
-        if(!is_file($srcFile)) {
+        if (!is_file($srcFile)) {
             throw new HttpNotFound("image <$srcFile> not found!");
         }
 
         [$oldW, $oldH, $srcTyp] = getimagesize($srcFile);
 
 
-        if($oldH > $oldW) {
+        if ($oldH > $oldW) {
             $newW = $dimensions;
             $newH = ($oldH / $oldW) * $dimensions;
             $limD = $oldW;
@@ -419,7 +422,8 @@ final class Gallery extends AbstractController
     /**
      * @throws DatabaseException
      */
-    protected function getLastModificatonDate(int $pathId) {
+    protected function getLastModificatonDate(int $pathId)
+    {
         $stmt =
             "SELECT `imagegalleries`.`CreationDate` FROM `{TABLE_PREFIX}_gallery_imagegalleries` AS `imagegalleries` " .
             "WHERE `imagegalleries`.`PathId` = %s " .
