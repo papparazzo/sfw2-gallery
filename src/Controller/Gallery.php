@@ -146,7 +146,7 @@ final class Gallery extends AbstractController
         $content = [
             'title'          => $row['Title'],
             'id'             => (int)$id,
-        #'mailaddr' =>          (string)$this->getEMail($row["Email"], $row['Creator'], 'Galerie ' . $row['Title'] . ' (' . $cd . ")"));
+            #'mailaddr' =>          (string)$this->getEMail($row["Email"], $row['Creator'], 'Galerie ' . $row['Title'] . ' (' . $cd . ")"));
             'creationDate'   => $this->dateTimeHelper->getDate(DateTimeHelper::FULL_DATE, $row['CreationDate']),
             'description'    => $row['Description'],
             'page'           => $page,
@@ -257,7 +257,7 @@ final class Gallery extends AbstractController
     {
         $id = htmlspecialchars($_POST['id']);
         $p = strpos($id, '__');
-        if($p === false) {
+        if ($p === false) {
             throw new HttpUnprocessableContent();
         }
 
