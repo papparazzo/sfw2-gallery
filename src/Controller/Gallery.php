@@ -145,7 +145,7 @@ final class Gallery extends AbstractController
 
         $content = [
             'title'          => $row['Title'],
-            'id'             => (int)$id,
+            'id'             => $id,
             #'mailaddr' =>          (string)$this->getEMail($row["Email"], $row['Creator'], 'Galerie ' . $row['Title'] . ' (' . $cd . ")"));
             'creationDate'   => $this->dateTimeHelper->getDate(DateTimeHelper::FULL_DATE, $row['CreationDate']),
             'description'    => $row['Description'],
