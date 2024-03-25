@@ -55,14 +55,14 @@ final class Newspaper extends AbstractController {
 
     const DIMENSIONS = 600;
 
-    protected string $title;
-    protected string $about;
-
     public function __construct(
-        protected DatabaseInterface $database,
-        protected DateTimeHelper $dateTimeHelper,
-        private readonly PermissionInterface $permission
-    ) {
+        private readonly DatabaseInterface   $database,
+        private readonly DateTimeHelper      $dateTimeHelper,
+        private readonly PermissionInterface $permission,
+        private readonly string              $title,
+        private readonly string              $about
+    )
+    {
     }
 
     /**
