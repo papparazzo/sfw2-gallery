@@ -217,7 +217,7 @@ final class Newspaper extends AbstractController {
     private function getDate(?string $date): string
     {
         if(is_null($date)) {
-            return "unbekannt";
+            return "unbekannt"; // FIXME I18N
         }
         return $this->dateTimeHelper->getDate(DateTimeHelper::FULL_DATE, $date);
     }
