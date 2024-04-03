@@ -85,7 +85,7 @@ final class Newspaper extends AbstractController {
         foreach($rows as $row) {
             $entry = [];
             $entry['id'     ] = $row['Id'];
-            $entry['date'   ] = $this->getDate($row['Date']);
+            $entry['date'   ] = $this->dateTimeHelper->getFullDate($row['Date']);
             $entry['title'  ] = $row['Title'];
             $entry['image'  ] = $this->getImageFile($row['FileName'], $pathId, false);
             $entry['preview'] = $this->getImageFile($row['FileName'], $pathId, true);
