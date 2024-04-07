@@ -24,14 +24,29 @@ declare(strict_types=1);
 
 namespace SFW2\Gallery\Controller;
 
+use Exception;
 use Psr\Http\Message\ResponseInterface as Response;
 use Psr\Http\Message\ServerRequestInterface as Request;
+use SFW2\Core\HttpExceptions\HttpNotFound;
+use SFW2\Core\Permission\AccessType;
+use SFW2\Core\Permission\PermissionInterface;
+use SFW2\Core\Utils\DateTimeHelper;
+use SFW2\Database\DatabaseException;
+use SFW2\Database\DatabaseInterface;
+use SFW2\Gallery\Helper\ImageHelperTrait;
 use SFW2\Routing\AbstractController;
+use SFW2\Routing\HelperTraits\getRoutingDataTrait;
 use SFW2\Routing\ResponseEngine;
 
 final class Video extends AbstractController
 {
+   use getRoutingDataTrait;
+   use ImageHelperTrait;
+
     public function __construct(
+        private readonly DatabaseInterface $database,
+        private readonly DateTimeHelper      $dateTimeHelper,
+        private readonly PermissionInterface $permission,
         private readonly string $title = "Videos",
         private readonly string $description = ''
     )
