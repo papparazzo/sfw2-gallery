@@ -53,7 +53,9 @@ final class Video extends AbstractController
     {
     }
 
-
+    /**
+     * @throws HttpNotFound
+     */
     public function index(Request $request, ResponseEngine $responseEngine): Response
     {
         return $responseEngine->render($request, $this->getData(), "SFW2\\Gallery\\videos");
