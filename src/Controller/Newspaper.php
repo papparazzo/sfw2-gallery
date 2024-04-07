@@ -210,15 +210,4 @@ final class Newspaper extends AbstractController {
         );
         return $responseEngine->render($request);
     }
-
-    /**
-     * @throws Exception
-     */
-    private function getDate(?string $date): string
-    {
-        if(is_null($date)) {
-            return "unbekannt"; // FIXME I18N
-        }
-        return $this->dateTimeHelper->getDate(DateTimeHelper::FULL_DATE, $date);
-    }
 }
